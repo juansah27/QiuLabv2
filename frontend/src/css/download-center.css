@@ -1,0 +1,1402 @@
+/* Download Center Style */
+.download-center-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  background-color: transparent;
+  color: #4b5563;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.download-center-button:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.download-center-button.active {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.dark .download-center-button {
+  color: #d1d5db;
+}
+
+.dark .download-center-button:hover {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .download-center-button.active {
+  background-color: #4b5563;
+  color: #f9fafb;
+}
+
+.download-badge-counter {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  width: 16px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+  z-index: 10;
+}
+
+/* Animasi ping yang lebih lambat untuk badge */
+.animate-ping-slow {
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75%, 100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+  }
+}
+
+.spin-slow {
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-very-slow {
+  animation: spin 8s linear infinite;
+}
+
+.auto-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12px;
+  width: 12px;
+  background-color: #10b981;
+  color: white;
+  border-radius: 9999px;
+  font-size: 0.5rem;
+  border: 1px solid white;
+}
+
+.dark .auto-badge {
+  border-color: #1f2937;
+  background-color: #059669;
+}
+
+.download-center-button.auto-enabled {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.dark .download-center-button.auto-enabled {
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+}
+
+.download-center-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  width: 24rem;
+  max-width: 90vw;
+  max-height: 80vh;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dark .download-center-dropdown {
+  background-color: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -4px rgba(0, 0, 0, 0.15);
+}
+
+.download-center-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.download-center-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auto-refresh-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #059669;
+}
+
+.dark .auto-refresh-indicator {
+  color: #10b981;
+}
+
+.dark .download-center-header {
+  border-bottom-color: #374151;
+  background-color: #1f2937;
+}
+
+.download-center-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .download-center-header h3 {
+  color: #f9fafb;
+}
+
+.download-center-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0.25rem;
+  color: #6b7280;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+}
+
+.download-center-close-btn:hover {
+  color: #4b5563;
+  background-color: #f3f4f6;
+}
+
+.dark .download-center-close-btn:hover {
+  color: #d1d5db;
+  background-color: #374151;
+}
+
+.download-center-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.download-center-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dark .download-center-actions {
+  background-color: #111827;
+  border-bottom-color: #374151;
+}
+
+.download-center-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #4b5563;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.button-text {
+  position: relative;
+  top: 1px;
+}
+
+.download-center-refresh-btn:hover {
+  color: #111827;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.download-center-refresh-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dark .download-center-refresh-btn {
+  color: #d1d5db;
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark .download-center-refresh-btn:hover {
+  color: #f9fafb;
+  background-color: #374151;
+  border-color: #6b7280;
+}
+
+.download-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #4b5563;
+  background-color: #e5e7eb;
+}
+
+.dark .download-badge {
+  color: #d1d5db;
+  background-color: #374151;
+}
+
+.download-center-auto-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #4b5563;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.download-center-auto-refresh-btn:hover {
+  color: #111827;
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.download-center-auto-refresh-btn.active {
+  color: #047857;
+  background-color: #ecfdf5;
+  border-color: #d1fae5;
+}
+
+.download-center-auto-refresh-btn.active:hover {
+  color: #065f46;
+  background-color: #d1fae5;
+  border-color: #a7f3d0;
+}
+
+.dark .download-center-auto-refresh-btn {
+  color: #d1d5db;
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark .download-center-auto-refresh-btn:hover {
+  color: #f9fafb;
+  background-color: #374151;
+  border-color: #6b7280;
+}
+
+.dark .download-center-auto-refresh-btn.active {
+  color: #10b981;
+  background-color: rgba(6, 95, 70, 0.5);
+  border-color: #047857;
+}
+
+.dark .download-center-auto-refresh-btn.active:hover {
+  color: #34d399;
+  background-color: rgba(6, 95, 70, 0.7);
+  border-color: #059669;
+}
+
+.download-center-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 320px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.dark .download-center-list {
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+.download-center-loading-state,
+.download-center-error-state,
+.download-center-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.dark .download-center-loading-state,
+.dark .download-center-error-state,
+.dark .download-center-empty-state {
+  color: #9ca3af;
+}
+
+.download-center-loading-state p,
+.download-center-error-state p,
+.download-center-empty-state p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 9999px;
+  margin-bottom: 0.75rem;
+}
+
+.dark .error-icon {
+  background-color: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+}
+
+.error-message {
+  font-size: 0.75rem;
+  max-width: 90%;
+  margin-bottom: 1rem;
+}
+
+.download-center-retry-btn {
+  padding: 0.375rem 0.75rem;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.download-center-retry-btn:hover {
+  background-color: #2563eb;
+}
+
+.dark .download-center-retry-btn {
+  background-color: #3b82f6;
+}
+
+.dark .download-center-retry-btn:hover {
+  background-color: #2563eb;
+}
+
+.download-success-alert,
+.delete-success-alert {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  margin: 0;
+  border-radius: 0;
+  font-size: 0.6875rem;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid;
+}
+
+.download-success-alert {
+  background-color: #d1fae5;
+  color: #047857;
+  border-bottom-color: #a7f3d0;
+}
+
+.delete-success-alert {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-bottom-color: #fecaca;
+}
+
+.dark .download-success-alert {
+  background-color: rgba(6, 95, 70, 0.3);
+  color: #10b981;
+  border-bottom-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark .delete-success-alert {
+  background-color: rgba(185, 28, 28, 0.3);
+  color: #ef4444;
+  border-bottom-color: rgba(239, 68, 68, 0.3);
+}
+
+.download-success-alert svg,
+.delete-success-alert svg {
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.download-file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.download-file-item {
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.15s;
+}
+
+.download-file-item:last-child {
+  border-bottom: none;
+}
+
+.download-file-item:hover {
+  background-color: #f9fafb;
+}
+
+.download-file-item.is-new {
+  background-color: rgba(239, 68, 68, 0.05);
+  border-left: 3px solid #ef4444;
+  position: relative;
+  overflow: hidden;
+  animation: highlight-new 2s ease-in-out;
+}
+
+.download-file-item.is-new:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.download-file-item.is-new::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background-color: #ef4444;
+}
+
+@keyframes highlight-new {
+  0%, 100% {
+    background-color: rgba(239, 68, 68, 0.05);
+  }
+  50% {
+    background-color: rgba(239, 68, 68, 0.15);
+  }
+}
+
+.file-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+  padding-right: 0.5rem;
+}
+
+.file-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  position: relative;
+}
+
+.file-name {
+  max-width: 80%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding-right: 0.25rem;
+  font-weight: 500;
+  font-size: 0.65rem;
+  position: relative;
+  cursor: default;
+}
+
+.file-name:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: -22px;
+  background-color: rgba(17, 24, 39, 0.9);
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  z-index: 10;
+  white-space: nowrap;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .file-name:hover::after {
+  background-color: rgba(249, 250, 251, 0.9);
+  color: #111827;
+}
+
+.file-status-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-left: 4px;
+}
+
+.file-status-ready {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.file-status-processing {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.file-status-other {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.dark .file-status-ready {
+  background-color: rgba(6, 95, 70, 0.2);
+  color: #10b981;
+}
+
+.dark .file-status-processing {
+  background-color: rgba(146, 64, 14, 0.2);
+  color: #fbbf24;
+}
+
+.dark .file-status-other {
+  background-color: rgba(3, 105, 161, 0.2);
+  color: #38bdf8;
+}
+
+.file-action-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.file-download-btn,
+.file-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.25rem;
+  transition: all 0.15s;
+  background: transparent;
+  border: none;
+}
+
+.file-download-btn {
+  color: #3b82f6;
+}
+
+.file-download-btn:hover {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.file-delete-btn {
+  color: #6b7280;
+}
+
+.file-delete-btn:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.dark .file-download-btn {
+  color: #60a5fa;
+}
+
+.dark .file-download-btn:hover {
+  background-color: rgba(37, 99, 235, 0.2);
+  color: #3b82f6;
+}
+
+.dark .file-delete-btn {
+  color: #9ca3af;
+}
+
+.dark .file-delete-btn:hover {
+  background-color: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+}
+
+.download-center-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.download-center-footer-left,
+.download-center-footer-right {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dark .download-center-footer {
+  background-color: #111827;
+  border-top-color: #374151;
+}
+
+.download-center-reload-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #4b5563;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.download-center-reload-btn:hover {
+  color: #111827;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.dark .download-center-reload-btn {
+  color: #d1d5db;
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark .download-center-reload-btn:hover {
+  color: #f9fafb;
+  background-color: #374151;
+  border-color: #6b7280;
+}
+
+.download-center-mark-viewed-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #1d4ed8;
+  background-color: #eff6ff;
+  border: 1px solid #dbeafe;
+  transition: all 0.2s;
+}
+
+.download-center-mark-viewed-btn:hover {
+  color: #1e40af;
+  background-color: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.dark .download-center-mark-viewed-btn {
+  color: #93c5fd;
+  background-color: rgba(30, 64, 175, 0.2);
+  border-color: #2563eb;
+}
+
+.dark .download-center-mark-viewed-btn:hover {
+  color: #bfdbfe;
+  background-color: rgba(30, 64, 175, 0.3);
+  border-color: #3b82f6;
+}
+
+/* Tooltip styles */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 120px;
+  background-color: #111827;
+  color: #fff;
+  text-align: center;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  /* Fade in tooltip */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #111827 transparent transparent transparent;
+}
+
+/* For tooltip variants */
+.tooltip-bottom .tooltip-text {
+  top: 125%;
+  bottom: auto;
+}
+
+.tooltip-bottom .tooltip-text::after {
+  top: auto;
+  bottom: 100%;
+  border-color: transparent transparent #111827 transparent;
+}
+
+.tooltip-left .tooltip-text {
+  top: 50%;
+  right: 125%;
+  bottom: auto;
+  left: auto;
+  transform: translateY(-50%);
+}
+
+.tooltip-left .tooltip-text::after {
+  top: 50%;
+  left: 100%;
+  margin-left: 0;
+  margin-top: -5px;
+  border-color: transparent transparent transparent #111827;
+}
+
+.tooltip-right .tooltip-text {
+  top: 50%;
+  left: 125%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
+.tooltip-right .tooltip-text::after {
+  top: 50%;
+  right: 100%;
+  left: auto;
+  margin-left: 0;
+  margin-top: -5px;
+  border-color: transparent #111827 transparent transparent;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .download-center-dropdown {
+    width: 20rem;
+  }
+  
+  .file-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+  }
+  
+  .download-center-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .download-center-footer-left, 
+  .download-center-footer-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .download-center-dropdown {
+    width: 18rem;
+  }
+  
+  .file-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .file-actions {
+    flex-direction: row;
+    width: 100%;
+    margin-top: 0.5rem;
+    justify-content: space-between;
+  }
+  
+  .download-center-controls {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
+/* Settings Panel */
+.download-center-settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: #6b7280;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+}
+
+.download-center-settings-toggle:hover {
+  color: #4b5563;
+  background-color: #f3f4f6;
+}
+
+.dark .download-center-settings-toggle:hover {
+  color: #d1d5db;
+  background-color: #374151;
+}
+
+.download-center-settings {
+  position: absolute;
+  top: 3rem;
+  right: 1rem;
+  width: 20rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  z-index: 60;
+  overflow: hidden;
+}
+
+.dark .download-center-settings {
+  background-color: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -4px rgba(0, 0, 0, 0.15);
+}
+
+.settings-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .settings-header {
+  border-bottom-color: #374151;
+}
+
+.settings-header h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .settings-header h4 {
+  color: #f9fafb;
+}
+
+.settings-content {
+  padding: 1rem;
+}
+
+.settings-group {
+  margin-bottom: 1rem;
+}
+
+.settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.dark .settings-label {
+  color: #d1d5db;
+}
+
+.settings-description {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-style: italic;
+}
+
+.dark .settings-description {
+  color: #9ca3af;
+}
+
+.settings-checkbox {
+  margin-right: 0.5rem;
+}
+
+.settings-value {
+  font-size: 0.875rem;
+  color: #111827;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.dark .settings-value {
+  color: #f9fafb;
+}
+
+.settings-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings-input {
+  flex: 1;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: #111827;
+  background-color: white;
+}
+
+.dark .settings-input {
+  border-color: #4b5563;
+  color: #f9fafb;
+  background-color: #374151;
+}
+
+.settings-apply-btn {
+  padding: 0.375rem 0.75rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.settings-apply-btn:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.settings-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dark .settings-apply-btn {
+  background-color: #3b82f6;
+}
+
+.dark .settings-apply-btn:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.settings-footer {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-reset-btn {
+  padding: 0.375rem 0.75rem;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.settings-reset-btn:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.dark .settings-reset-btn {
+  background-color: #374151;
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+.dark .settings-reset-btn:hover {
+  background-color: #4b5563;
+  color: #f9fafb;
+}
+
+/* Add after existing styles */
+
+.download-center-settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #4b5563;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.download-center-settings-btn:hover {
+  color: #111827;
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.dark .download-center-settings-btn {
+  color: #d1d5db;
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark .download-center-settings-btn:hover {
+  color: #f9fafb;
+  background-color: #374151;
+  border-color: #6b7280;
+}
+
+/* Compact Download Center Styles */
+.download-compact {
+  width: 20rem;
+  max-height: 400px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dark .download-compact {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.download-center-file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background-color: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+}
+
+.dark .download-center-file-info {
+  background-color: #111827;
+  border-bottom-color: #374151;
+}
+
+.download-file-counter {
+  color: #4b5563;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.download-file-counter small {
+  font-size: 0.65rem;
+  margin-top: 0.1rem;
+  color: #3b82f6;
+  font-style: italic;
+}
+
+.dark .download-file-counter {
+  color: #9ca3af;
+}
+
+.dark .download-file-counter small {
+  color: #60a5fa;
+}
+
+.download-center-refresh-small-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  padding: 0.375rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 0.25rem;
+  color: #4b5563;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.download-center-refresh-small-btn:hover {
+  color: #111827;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.dark .download-center-refresh-small-btn {
+  color: #d1d5db;
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark .download-center-refresh-small-btn:hover {
+  color: #f9fafb;
+  background-color: #374151;
+  border-color: #6b7280;
+}
+
+.download-compact-list {
+  max-height: 280px;
+}
+
+.compact-file {
+  padding: 0;
+}
+
+.file-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.file-meta.compact-meta {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.6rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+  line-height: 1.2;
+}
+
+.dark .compact-meta {
+  color: #9ca3af;
+}
+
+.file-actions.compact-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  align-self: center;
+}
+
+.file-uploader, .file-date {
+  font-size: 0.575rem;
+}
+
+.file-download-btn,
+.file-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.25rem;
+  transition: all 0.15s;
+  background: transparent;
+  border: none;
+}
+
+.is-new {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.dark .is-new {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.new-file-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  padding: 0.1rem 0.3rem;
+  margin-left: 0.375rem;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 0.25rem;
+  animation: pulse-badge 2s infinite;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    background-color: #ef4444;
+  }
+  50% {
+    background-color: #dc2626;
+  }
+}
+
+.dark .new-file-badge {
+  background-color: #60a5fa;
+}
+
+/* Make success alerts more compact and fixed to top */
+.download-success-alert,
+.delete-success-alert {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  margin: 0;
+  border-radius: 0;
+  font-size: 0.6875rem;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid;
+}
+
+.download-success-alert {
+  background-color: #d1fae5;
+  color: #047857;
+  border-bottom-color: #a7f3d0;
+}
+
+.delete-success-alert {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-bottom-color: #fecaca;
+}
+
+.dark .download-success-alert {
+  background-color: rgba(6, 95, 70, 0.3);
+  color: #10b981;
+  border-bottom-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark .delete-success-alert {
+  background-color: rgba(185, 28, 28, 0.3);
+  color: #ef4444;
+  border-bottom-color: rgba(239, 68, 68, 0.3);
+}
+
+.file-content.compact-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.dark .download-file-item {
+  border-bottom-color: #374151;
+}
+
+.dark .download-file-item:hover {
+  background-color: #111827;
+}
+
+.dark .download-file-item.is-new {
+  background-color: rgba(3, 105, 161, 0.2);
+  border-left: 3px solid #60a5fa;
+}
+
+.dark .download-file-item.is-new:hover {
+  background-color: rgba(3, 105, 161, 0.3);
+}
+
+.dark .download-file-item.is-new::before {
+  background-color: #60a5fa;
+}
+
+/* Notifikasi style sebagai pengganti auto-refresh */
+.notify-pulse {
+  animation: notify-glow 2s infinite;
+  position: relative;
+}
+
+@keyframes notify-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+}
+
+.notify-badge {
+  animation: notify-bounce 1.5s ease infinite;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+@keyframes notify-bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+} 

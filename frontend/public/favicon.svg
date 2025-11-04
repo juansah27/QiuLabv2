@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .icon-stroke { stroke: #00D4E7; }
+      .icon-fill { fill: #00D4E7; }
+      .pie-part1 { fill: #00D4E7; }
+      .pie-part2 { fill: #7165FF; }
+      .pie-part3 { fill: #4F80FF; }
+    }
+    @media (prefers-color-scheme: light) {
+      .icon-stroke { stroke: #00BCD4; }
+      .icon-fill { fill: #00BCD4; }
+      .pie-part1 { fill: #00BCD4; }
+      .pie-part2 { fill: #5D4AFF; }
+      .pie-part3 { fill: #3F6DE5; }
+    }
+  </style>
+  
+  <!-- Hexagon dengan pie chart - Adjusted size and position for better visibility -->
+  <g transform="translate(100, 100) scale(0.9)">
+    <!-- Hexagon outline -->
+    <polygon points="0,-80 69.28,-40 69.28,40 0,80 -69.28,40 -69.28,-40" fill="none" class="icon-stroke" stroke-width="7"/>
+    
+    <!-- Hexagon connections/dots - Reduced size for better balance -->
+    <circle cx="0" cy="-80" r="12" class="icon-fill"/>
+    <circle cx="69.28" cy="-40" r="12" class="icon-fill"/>
+    <circle cx="69.28" cy="40" r="12" class="icon-fill"/>
+    <circle cx="0" cy="80" r="12" class="icon-fill"/>
+    <circle cx="-69.28" cy="40" r="12" class="icon-fill"/>
+    <circle cx="-69.28" cy="-40" r="12" class="icon-fill"/>
+    
+    <!-- Pie chart sections - Adjusted size -->
+    <path d="M0,0 L0,-45 A45,45 0 0,1 39,22.5 z" class="pie-part1"/>
+    <path d="M0,0 L39,22.5 A45,45 0 0,1 -39,22.5 z" class="pie-part2"/>
+    <path d="M0,0 L-39,22.5 A45,45 0 0,1 0,-45 z" class="pie-part3"/>
+  </g>
+</svg> 

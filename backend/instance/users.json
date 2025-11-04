@@ -1,0 +1,16 @@
+[
+    {
+        "username": "admin",
+        "name": "Administrator",
+        "password": "d1799e4c4afb12fdcd267729219f9849d61f1d36a647895cff8b87bba8e38bc4:9847a0d4e0a42fee",
+        "role": "admin",
+        "created_at": "2025-04-05 03:33:39"
+    },
+    {
+        "username": "guest",
+        "name": "Guest User",
+        "password": "527ac451742926175c2d0ede145c734a18c711bbe8e5b35a3cfa4391f861e131:3cf8776a4b0c5ad1",
+        "role": "guest",
+        "created_at": "2025-04-05 03:33:39"
+    }
+]

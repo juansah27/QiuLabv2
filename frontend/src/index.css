@@ -1,0 +1,284 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    --primary: 221.2 83% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83% 53.3%;
+    
+    --radius: 0.5rem;
+  }
+  
+  .dark {
+    /* Cursor Dark Midnight Theme */
+    --background: 232 35% 2%;      /* #02050e - Very dark blue-black */
+    --foreground: 213 31% 91%;     /* #eaeef6 - Almost white with blue tint */
+    
+    --card: 232 36% 4%;            /* #05081a - Dark blue-black for cards */
+    --card-foreground: 213 31% 91%; /* #eaeef6 - Matching text */
+    
+    --popover: 232 36% 4%;         /* #05081a - Same as card */
+    --popover-foreground: 213 31% 91%; /* #eaeef6 - Matching text */
+    
+    /* Accent Colors */
+    --primary: 252 100% 68%;       /* #844dff - Vibrant purple */
+    --primary-foreground: 213 31% 91%; /* #eaeef6 - Light text on primary */
+    
+    --secondary: 232 25% 8%;       /* #0a0e1e - Slightly lighter than background */
+    --secondary-foreground: 213 31% 91%; /* #eaeef6 - Light text */
+    
+    --muted: 232 25% 8%;           /* #0a0e1e - Same as secondary */
+    --muted-foreground: 215 20% 70%; /* #a9b6d0 - Slightly dimmed text */
+    
+    --accent: 252 30% 18%;         /* #1e1533 - Subtle purple accent */
+    --accent-foreground: 213 31% 91%; /* #eaeef6 - Light text */
+    
+    --destructive: 0 84% 60%;      /* #f55252 - Bright red */
+    --destructive-foreground: 213 31% 91%; /* #eaeef6 - Light text */
+    
+    /* Border and Highlight Colors */
+    --border: 232 36% 10%;         /* #0d1230 - Subtle borders */
+    --input: 232 36% 10%;          /* #0d1230 - Input borders */
+    --ring: 252 100% 68%;          /* #844dff - Focus rings match primary */
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+  
+  /* Tambahkan transisi untuk semua elemen yang berubah saat pergantian tema */
+  *, *::before, *::after {
+    @apply transition-colors duration-300;
+  }
+  
+  body {
+    @apply min-h-screen bg-background text-foreground transition-colors duration-300;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  h1 {
+    @apply text-2xl sm:text-3xl md:text-4xl;
+  }
+
+  h2 {
+    @apply text-xl sm:text-2xl md:text-3xl;
+  }
+
+  h3 {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground focus:ring-primary;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground focus:ring-secondary;
+  }
+
+  .btn-outline {
+    @apply border border-input hover:bg-accent hover:text-accent-foreground focus:ring-ring;
+  }
+
+  .card {
+    @apply bg-card text-card-foreground rounded-lg shadow-md overflow-hidden border border-border;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card text-foreground;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-muted-foreground mb-1;
+  }
+
+  /* Navbar and Sidebar specific styles - Same color! */
+  .navbar {
+    @apply bg-card;
+  }
+
+  .sidebar {
+    @apply bg-card;
+  }
+
+  .nav-item {
+    @apply text-muted-foreground hover:text-foreground hover:bg-accent/50;
+  }
+
+  .nav-item-active {
+    @apply text-primary bg-primary/10;
+  }
+
+  /* Status colors */
+  .text-success {
+    @apply text-emerald-400;
+  }
+
+  .text-error {
+    @apply text-rose-400;
+  }
+
+  .text-warning {
+    @apply text-amber-400;
+  }
+
+  .border-warning {
+    @apply border-amber-500;
+  }
+}
+
+/* Prevent horizontal scrolling globally */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Common classes for text truncation */
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-secondary rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-accent;
+}
+
+/* Chrome download notification style animasi */
+@keyframes bounce-once {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 1s ease infinite;
+}
+
+/* Animasi ping yang lebih lambat untuk badge */
+@keyframes ping-slow {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Spotlight effect */
+.spotlight-ring {
+  @apply absolute inset-0 rounded-full ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+}
+
+/* Ripple effect */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s linear;
+}
+
+/* Theme transition */
+.theme-transition {
+  @apply transition-colors duration-300;
+}
+
+/* Theme flash animation */
+@keyframes theme-flash {
+  0% {
+    background-color: var(--background);
+  }
+  50% {
+    background-color: var(--primary);
+  }
+  100% {
+    background-color: var(--background);
+  }
+}
+
+.theme-flash {
+  animation: theme-flash 0.5s ease-in-out;
+}
+
+/* Dark mode specific styles */
+.dark .bg-gray-750 {
+  @apply bg-secondary;
+} 

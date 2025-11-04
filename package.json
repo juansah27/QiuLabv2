@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@tanstack/react-query": "^5.75.5",
+    "@tanstack/react-virtual": "^3.13.8",
+    "html2canvas": "^1.4.1",
+    "idb": "^8.0.3",
+    "react-window": "^1.8.11",
+    "recharts": "^2.15.3"
+  }
+}

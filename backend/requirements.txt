@@ -1,0 +1,25 @@
+# Flask Core
+Flask==2.3.3
+Flask-CORS==4.0.0
+Flask-JWT-Extended==4.5.3
+flask-restful==0.3.10
+flask-login==0.6.3
+Flask-Compress==1.14
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+
+# Data Processing
+pandas==2.2.3
+numpy==1.26.4
+openpyxl==3.1.5
+
+# Database Drivers
+pyodbc==5.2.0
+psycopg2-binary==2.9.10
+
+# Production Server
+waitress==2.1.2
+gunicorn==21.2.0
+
+# Additional
+eventlet==0.33.3

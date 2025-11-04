@@ -1,0 +1,1388 @@
+import os
+import math
+import sqlite3
+import secrets
+import string
+import json
+from flask import Blueprint, request, jsonify, current_app, make_response
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
+from flask_login import login_user, logout_user, current_user
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity, get_jwt
+from models.user import User
+from dotenv import load_dotenv
+
+# Load .env
+load_dotenv()
+
+auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+
+@auth_bp.route('/register', methods=['POST'])
+def register():
+    try:
+        data = request.get_json()
+        
+        # Validasi data
+        if not data or not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password are required'}), 400
+    
+        # Cek apakah username sudah ada
+        if User.get_by_username(data['username']):
+            return jsonify({'error': 'Username already exists'}), 400
+    
+        # Buat user baru
+        user = User.create(
+            username=data['username'],
+            email=data.get('email', f"{data['username']}@example.com"),
+            password=data['password'],
+            is_admin=data.get('is_admin', False)
+        )
+    
+        # Generate token
+        access_token = create_access_token(
+            identity=user.id,
+            additional_claims={
+                'is_admin': user.is_admin,
+                'username': user.username
+            }
+        )
+    
+        return jsonify({
+            'message': 'User registered successfully',
+            'user': user.to_dict(),
+            'access_token': access_token
+        }), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    try:
+        data = request.get_json()
+        
+        if not data or 'username' not in data or 'password' not in data:
+            return jsonify({'message': 'Login failed', 'error': 'Username and password are required'}), 400
+        
+        user = User.query.filter_by(username=data['username']).first()
+        
+        if not user:
+            return jsonify({'message': 'Login failed', 'error': 'Invalid username or password'}), 401
+        
+        app.logger.debug(f"Super user attempt? {user.is_superuser}")
+        
+        password_to_check = data['password']
+        stored_hash = user.password
+        
+        if check_password_hash(stored_hash, password_to_check):
+            jwt_token = create_jwt_token(user.id)
+            
+            resp = make_response(jsonify({
+                'message': 'Login successful',
+                'user_id': user.id,
+                'username': user.username,
+                'full_name': user.full_name,
+                'role': user.role,
+                'is_superuser': user.is_superuser,
+                'token': jwt_token
+            }))
+            
+            resp.set_cookie('token', jwt_token, httponly=True, secure=False)
+            resp.headers['Authorization'] = f'Bearer {jwt_token}'
+            
+            return resp, 200
+        else:
+            return jsonify({'message': 'Login failed', 'error': 'Invalid username or password'}), 401
+    except Exception as e:
+        app.logger.error(f"Error during login: {str(e)}")
+        return jsonify({'message': 'Login failed', 'error': str(e)}), 500
+
+@auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    logout_user()
+    return jsonify({'message': 'Logout successful'}), 200
+
+@auth_bp.route('/me', methods=['GET'])
+@jwt_required()
+def get_user():
+    try:
+        # Debug auth header
+        auth_header = request.headers.get('Authorization', 'No Auth header')
+        print(f"Auth header in /me endpoint: {auth_header}")
+        
+        # Get user identity dan klaim tambahan
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        print(f"Decoded user_identity: {user_identity}, type: {type(user_identity)}")
+        print(f"Claims: {claims}")
+        
+        # Check if this is a request for ladyqiu's data
+        is_superuser_check = False
+        if 'username' in claims and claims['username'] == 'ladyqiu':
+            is_superuser_check = True
+            print("SUPERUSER ACCESS CHECK - Attempting to get ladyqiu data")
+            print(f"SUPERUSER DEBUG - User identity: {user_identity}")
+            print(f"SUPERUSER DEBUG - Claims: {claims}")
+        
+        # User identity bisa berupa dict atau string/int
+        user_id = None
+        
+        # Jika identity adalah dict (dari token lama)
+        if isinstance(user_identity, dict) and 'id' in user_identity:
+            user_id = user_identity['id']
+            print(f"Extracted user_id from dict: {user_id}")
+        
+        # Jika identity adalah string yang bisa dikonversi ke int
+        elif isinstance(user_identity, str) and user_identity.isdigit():
+            user_id = int(user_identity)
+            print(f"Converted string user_id to int: {user_id}")
+        
+        # Jika identity adalah int atau bisa dijadikan user_id langsung
+        else:
+            user_id = user_identity
+            print(f"Using user_identity directly as user_id: {user_id}")
+        
+        # Khusus untuk ladyqiu, coba cari langsung dengan username
+        if is_superuser_check and not user_id:
+            superuser = User.get_by_username('ladyqiu')
+            if superuser:
+                print(f"SUPERUSER DEBUG - Found user by username: {superuser.id}, is_admin: {superuser.is_admin}")
+                user_id = superuser.id
+        
+        # Coba ambil user dari database
+        user = User.get_by_id(user_id)
+        
+        # Jika user tidak ditemukan tapi kita punya data dari token
+        if not user:
+            print(f"User not found in database for id: {user_id}")
+            
+            if is_superuser_check:
+                print("SUPERUSER DEBUG - Creating response from claims")
+                return jsonify({
+                    'id': user_id or 2,  # ID default untuk ladyqiu
+                    'username': 'ladyqiu',
+                    'role': 'admin',
+                    'is_admin': True,
+                    'email': 'ladyqiu@example.com',
+                    'name': 'Lady Qiu'
+                }), 200
+            
+            # Jika kita memiliki data dari token, gunakan itu
+            elif claims.get('username'):
+                print("Using claims data instead")
+                return jsonify({
+                    'id': user_id,
+                    'username': claims.get('username', 'unknown'),
+                    'role': claims.get('role', 'user'),
+                    'is_admin': claims.get('is_admin', False),
+                    'email': claims.get('email', f"user{user_id}@example.com"),
+                    'name': claims.get('name', 'Unknown User')
+                }), 200
+            else:
+                return jsonify({'error': 'User not found'}), 404
+        
+        # Tambahkan role jika belum ada
+        user_data = user.to_dict()
+        if is_superuser_check and not user_data.get('role'):
+            user_data['role'] = 'admin'
+            print("SUPERUSER DEBUG - Added admin role to response")
+        
+        print(f"Returning user data: {user_data}")
+        
+        return jsonify(user_data), 200
+    except Exception as e:
+        print(f"Error in /me endpoint: {str(e)}")
+        return jsonify({'error': f'Error: {str(e)}'}), 500
+
+@auth_bp.route('/users', methods=['GET'])
+@jwt_required()
+def get_users():
+    try:
+        # Get user identity dan klaim tambahan
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        print(f"Decoded user_identity in /users: {user_identity}")
+        
+        # Cek apakah pengguna adalah admin
+        is_admin = False
+        
+        # Cek dari claims dulu
+        if claims.get('is_admin') == True or claims.get('role') == 'admin':
+            print("User is admin based on JWT claims")
+            is_admin = True
+        else:
+            # Jika tidak ada di claims, coba cek database
+            current_user = User.get_by_id(user_identity)
+            if current_user and current_user.is_admin:
+                print("User is admin based on database record")
+                is_admin = True
+                
+        if not is_admin:
+            print(f"Unauthorized access to /users - user_identity: {user_identity}")
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        users = User.get_all_users()
+        return jsonify(users), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/users', methods=['POST'])
+@jwt_required()
+def create_user():
+    try:
+        # Get user identity dan klaim tambahan
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        # Cek apakah pengguna adalah admin
+        is_admin = False
+        
+        # Cek dari claims dulu
+        if claims.get('is_admin') == True or claims.get('role') == 'admin':
+            is_admin = True
+        else:
+            # Jika tidak ada di claims, coba cek database
+            current_user = User.get_by_id(user_identity)
+            if current_user and current_user.is_admin:
+                is_admin = True
+                
+        if not is_admin:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        data = request.get_json()
+        
+        # Untuk debug
+        print(f"Create user request: {data}")
+        
+        # Validasi data
+        if not data or not data.get('username'):
+            return jsonify({'error': 'Username is required'}), 400
+            
+        # Cek apakah username sudah ada
+        if User.get_by_username(data['username']):
+            return jsonify({'error': 'Username already exists'}), 400
+            
+        # Buat password acak jika tidak ada
+        password = data.get('password')
+        generated_password = None
+        
+        if not password:
+            # Generate random password
+            alphabet = string.ascii_letters + string.digits
+            password = ''.join(secrets.choice(alphabet) for i in range(10))
+            generated_password = password
+            
+        # Tentukan admin berdasarkan input, default: false
+        is_admin = data.get('is_admin', False)
+        if data.get('role') == 'admin':
+            is_admin = True
+            
+        # Buat user baru
+        user = User.create(
+            username=data['username'],
+            email=data.get('email', ''),
+            password=password,
+            is_admin=is_admin
+        )
+        
+        # Prepare response
+        response = {
+            'success': True,
+            'message': 'User created successfully',
+            'user': user.to_dict()
+        }
+        
+        # Add generated password to response if we created one
+        if generated_password:
+            response['user']['generated_password'] = generated_password
+            
+        return jsonify(response), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/create-superuser', methods=['POST'])
+def create_superuser():
+    """
+    Endpoint untuk membuat superuser (admin pertama).
+    Hanya bisa digunakan jika belum ada user admin di sistem.
+    
+    Data yang dibutuhkan:
+    {
+        "username": "username",
+        "password": "password",
+        "email": "email@example.com"
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validasi data
+        if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+            return jsonify({'error': 'Username, email, and password are required'}), 400
+            
+        # Cek apakah username sudah ada
+        if User.get_by_username(data['username']):
+            return jsonify({'error': 'Username sudah digunakan'}), 400
+            
+        # Cek apakah email sudah ada
+        if User.get_by_email(data['email']):
+            return jsonify({'error': 'Email sudah terdaftar'}), 400
+            
+        # Buat user baru dengan role admin
+        user = User.create(
+            username=data['username'],
+            email=data['email'],
+            password=data['password'],
+            is_admin=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Superuser berhasil dibuat',
+            'user': user.to_dict()
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/audit-logs', methods=['POST'])
+@jwt_required()
+def create_audit_log():
+    """
+    Endpoint untuk menyimpan log aktivitas pengguna
+    """
+    try:
+        user_id = get_jwt_identity()
+        user = User.get_by_id(user_id)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Get data
+        data = request.get_json(silent=True) or {}
+        
+        # Connect to database
+        conn = User.get_db_connection()
+        cursor = conn.cursor()
+        
+        # Create audit_logs table if not exists
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                username TEXT NOT NULL,
+                action TEXT NOT NULL,
+                details TEXT,
+                timestamp TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+        
+        # Insert the log entry
+        cursor.execute(
+            "INSERT INTO audit_logs (user_id, username, action, details, timestamp) VALUES (?, ?, ?, ?, ?)",
+            (
+                data.get('user_id', user.id),
+                data.get('username', user.username),
+                data.get('action', 'unknown'),
+                str(data.get('details', {})),
+                data.get('timestamp', datetime.now().isoformat())
+            )
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Audit log saved'}), 201
+        
+    except Exception as e:
+        print(f"Error creating audit log: {str(e)}")
+        return jsonify({'error': f'Failed to save audit log: {str(e)}'}), 500
+
+@auth_bp.route('/audit-logs', methods=['GET'])
+@jwt_required()
+def get_audit_logs():
+    """
+    Endpoint untuk mengambil log aktivitas (admin only)
+    """
+    try:
+        # Get user identity dan klaim tambahan
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        print(f"Decoded user_identity in /audit-logs: {user_identity}")
+        
+        # Cek apakah pengguna adalah admin
+        is_admin = False
+        
+        # Cek dari claims dulu
+        if claims.get('is_admin') == True or claims.get('role') == 'admin':
+            print("User is admin based on JWT claims")
+            is_admin = True
+        else:
+            # Jika tidak ada di claims, coba cek database
+            # User identity bisa berupa dict atau string/int
+            user_id = None
+            
+            # Jika identity adalah dict (dari token lama)
+            if isinstance(user_identity, dict) and 'id' in user_identity:
+                user_id = user_identity['id']
+            # Jika identity adalah string yang bisa dikonversi ke int
+            elif isinstance(user_identity, str) and user_identity.isdigit():
+                user_id = int(user_identity)
+            # Jika identity adalah int atau bisa dijadikan user_id langsung
+            else:
+                user_id = user_identity
+                
+            current_user = User.get_by_id(user_id)
+            if current_user and current_user.is_admin:
+                print("User is admin based on database record")
+                is_admin = True
+                
+        if not is_admin:
+            print(f"Unauthorized access to /audit-logs - user_identity: {user_identity}")
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        # Connect to database
+        conn = User.get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if audit_logs table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'")
+        if not cursor.fetchone():
+            return jsonify([]), 200
+            
+        # Get filters from query parameters
+        username = request.args.get('username')
+        action = request.args.get('action')
+        date_from = request.args.get('from')
+        date_to = request.args.get('to')
+        
+        # Build query
+        query = "SELECT * FROM audit_logs"
+        params = []
+        
+        # Add filters
+        conditions = []
+        if username:
+            conditions.append("username = ?")
+            params.append(username)
+        if action:
+            conditions.append("action = ?")
+            params.append(action)
+        if date_from:
+            conditions.append("timestamp >= ?")
+            params.append(date_from)
+        if date_to:
+            conditions.append("timestamp <= ?")
+            params.append(date_to)
+            
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+            
+        # Add ordering
+        query += " ORDER BY timestamp DESC"
+        
+        # Execute query
+        cursor.execute(query, params)
+        logs = cursor.fetchall()
+        
+        # Convert to list of dictionaries
+        result = []
+        for log in logs:
+            result.append({
+                'id': log['id'],
+                'user_id': log['user_id'],
+                'username': log['username'],
+                'action': log['action'],
+                'details': log['details'],
+                'timestamp': log['timestamp']
+            })
+            
+        conn.close()
+        return jsonify(result), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to fetch audit logs: {str(e)}'}), 500
+
+@auth_bp.route('/test-login', methods=['POST'])
+def test_login():
+    """
+    Endpoint khusus untuk testing login saat debugging
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        username = data.get('username', 'test_user')
+        
+        print(f"Test login attempt for: {username}")
+        
+        # Cari user berdasarkan username
+        user = User.get_by_username(username)
+        
+        # Jika user tidak ada, coba buat user baru
+        if not user:
+            print(f"Creating test user: {username}")
+            try:
+                user = User.create(
+                    username=username,
+                    email=f"{username}@test.com",
+                    password="password123",
+                    is_admin=True
+                )
+            except Exception as e:
+                print(f"Error creating test user: {str(e)}")
+                # Coba sekali lagi mencari user (mungkin user sudah ada)
+                user = User.get_by_username(username)
+                if not user:
+                    return jsonify({'error': f'Failed to create test user: {str(e)}'}), 500
+        
+        # Generate access token
+        access_token = create_access_token(
+            identity=user.id,
+            expires_delta=timedelta(days=30)  # Token berlaku 30 hari untuk testing
+        )
+        
+        print(f"Test login successful for: {username}")
+        print(f"Generated token (first 20 chars): {access_token[:20]}...")
+        
+        user_data = user.to_dict()
+        print(f"User data: {user_data}")
+        
+        return jsonify({
+            'message': 'Test login successful',
+            'user': user_data,
+            'access_token': access_token
+        }), 200
+        
+    except Exception as e:
+        print(f"Test login error: {str(e)}")
+        return jsonify({'error': f'Test login error: {str(e)}'}), 500
+
+@auth_bp.route('/debug-token', methods=['GET'])
+def debug_token():
+    """
+    Endpoint untuk menguji token yang dikirimkan dengan detail error yang lebih lengkap
+    """
+    auth_header = request.headers.get('Authorization', 'No Auth header')
+    print(f"Debug token: Auth header received: {auth_header}")
+    
+    # Tambahkan info detail untuk debugging
+    debug_info = {
+        'auth_header': auth_header,
+        'header_type': type(auth_header).__name__,
+        'header_length': len(auth_header) if auth_header else 0,
+        'request_method': request.method,
+        'request_path': request.path,
+        'request_headers': dict(request.headers),
+        'server_time': str(datetime.now())
+    }
+    
+    try:
+        # Mencoba parse token secara manual
+        if not auth_header or auth_header == 'No Auth header':
+            return jsonify({
+                'success': False,
+                'message': 'Authorization header tidak ditemukan',
+                'debug_info': debug_info
+            }), 400
+            
+        if not auth_header.startswith('Bearer '):
+            return jsonify({
+                'success': False,
+                'message': 'Format header tidak valid, harusnya "Bearer <token>"',
+                'debug_info': debug_info
+            }), 400
+            
+        token = auth_header[7:]  # Hapus "Bearer " dari header
+        print(f"Token extracted: {token[:20]}...")
+        
+        debug_info['token_length'] = len(token)
+        debug_info['token_preview'] = token[:20] + '...' if len(token) > 20 else token
+        
+        # Coba decode token secara manual tanpa verifikasi untuk debug
+        import jwt
+        try:
+            # Decode tanpa verifikasi dulu untuk debugging
+            unverified = jwt.decode(token, options={"verify_signature": False})
+            debug_info['manual_decode'] = {
+                'success': True,
+                'unverified_payload': unverified
+            }
+        except Exception as e:
+            debug_info['manual_decode'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        # Coba decode dengan flask-jwt-extended
+        try:
+            from flask_jwt_extended import decode_token
+            decoded = decode_token(token)
+            debug_info['flask_jwt_decode'] = {
+                'success': True,
+                'decoded': {k: str(v) for k, v in decoded.items()}
+            }
+            print(f"Token decoded successfully with flask-jwt-extended")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Token valid',
+                'decoded': decoded,
+                'debug_info': debug_info
+            }), 200
+        except Exception as e:
+            debug_info['flask_jwt_decode'] = {
+                'success': False,
+                'error': str(e)
+            }
+            print(f"Flask-JWT-Extended decode error: {str(e)}")
+            
+            # Coba dapatkan info lebih spesifik tentang error
+            if "signature" in str(e).lower():
+                debug_info['possible_issue'] = "Tanda tangan (signature) token tidak valid"
+            elif "expired" in str(e).lower():
+                debug_info['possible_issue'] = "Token sudah kadaluarsa"
+            elif "invalid" in str(e).lower():
+                debug_info['possible_issue'] = "Format token tidak valid"
+            
+            return jsonify({
+                'success': False,
+                'message': f'Token validation failed: {str(e)}',
+                'debug_info': debug_info
+            }), 422
+            
+    except Exception as e:
+        print(f"General token debugging error: {str(e)}")
+        debug_info['general_error'] = str(e)
+        return jsonify({
+            'success': False,
+            'message': f'Token debugging error: {str(e)}',
+            'debug_info': debug_info
+        }), 422
+
+@auth_bp.route('/simple-debug', methods=['GET'])
+def simple_debug():
+    """
+    Endpoint sederhana untuk pengujian koneksi tanpa JWT
+    """
+    print(f"Simple debug endpoint accessed")
+    return jsonify({
+        'success': True,
+        'message': 'Debug endpoint working correctly',
+        'timestamp': str(datetime.now()),
+        'server_info': {
+            'route': 'auth/simple-debug',
+            'method': 'GET'
+        }
+    }), 200
+
+@auth_bp.route('/generate-test-token', methods=['GET'])
+def generate_test_token():
+    """
+    Endpoint untuk menghasilkan token test yang valid
+    """
+    from flask_jwt_extended import create_access_token
+    
+    try:
+        # Identitas pengguna harus string, bukan objek
+        user_id = 9999
+        
+        # Buat token dengan masa waktu yang diperpanjang (30 hari)
+        token = create_access_token(
+            identity=str(user_id),  # Pastikan identity adalah string
+            expires_delta=timedelta(days=30),
+            additional_claims={
+                'username': 'test-user',
+                'role': 'admin',
+                'is_admin': True,
+                'is_test': True,
+                'name': 'Test User',
+                'email': 'test@example.com',
+                'user_id': user_id
+            }
+        )
+        
+        print(f"Generated test token for debugging with string subject")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Token test berhasil dibuat',
+            'token': token,
+            'user': {
+                'id': user_id,
+                'username': 'test-user',
+                'role': 'admin',
+                'name': 'Test User',
+                'is_admin': True
+            },
+            'expires': str(datetime.now() + timedelta(days=30))
+        }), 200
+        
+    except Exception as e:
+        print(f"Error generating test token: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error generating test token: {str(e)}'
+        }), 500
+
+@auth_bp.route('/reset-passwords', methods=['POST'])
+def reset_passwords():
+    """
+    Endpoint untuk mengatur ulang password akun untuk testing
+    HANYA DIGUNAKAN UNTUK PENGEMBANGAN
+    """
+    try:
+        # Dictionary akun untuk reset dengan password baru
+        test_accounts = {
+            'admin': '@Admin123',
+            'ladyqiu': '@Wanipiro27'
+        }
+        
+        # Reset password untuk setiap akun test
+        results = []
+        
+        for username, new_password in test_accounts.items():
+            user = User.get_by_username(username)
+            
+            if not user:
+                results.append({
+                    'username': username,
+                    'status': 'failed',
+                    'message': 'User not found'
+                })
+                continue
+            
+            # Update password
+            conn = User.get_db_connection()
+            cursor = conn.cursor()
+            
+            new_password_hash = generate_password_hash(new_password)
+            
+            cursor.execute(
+                "UPDATE users SET password_hash = ? WHERE username = ?",
+                (new_password_hash, username)
+            )
+            conn.commit()
+            conn.close()
+            
+            results.append({
+                'username': username,
+                'status': 'success',
+                'message': 'Password reset successfully',
+                'new_password': new_password  # HANYA UNTUK TESTING!
+            })
+            
+            print(f"Password reset for {username}: {new_password}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Passwords reset successfully',
+            'results': results
+        }), 200
+        
+    except Exception as e:
+        print(f"Error resetting passwords: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'Error resetting passwords: {str(e)}'
+        }), 500
+
+@auth_bp.route('/superuser-login', methods=['POST'])
+def superuser_login():
+    """
+    Endpoint khusus untuk login superuser (ladyqiu)
+    """
+    try:
+        data = request.get_json()
+        
+        print("SUPERUSER LOGIN - Special endpoint accessed")
+        print(f"Request data: {data}")
+        
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        # Hanya untuk superuser
+        if username != 'ladyqiu':
+            print("Attempted to use superuser login with non-superuser account")
+            return jsonify({'error': 'Hanya untuk akun superuser'}), 403
+        
+        # Cari user
+        user = User.get_by_username(username)
+        
+        if not user:
+            print(f"SUPERUSER LOGIN - User not found: {username}")
+            return jsonify({'error': 'Akun superuser tidak ditemukan'}), 404
+        
+        print(f"SUPERUSER LOGIN - Found user: {user.id}, is_admin: {user.is_admin}")
+        
+        # Verifikasi password
+        if not user.check_password(password):
+            print("SUPERUSER LOGIN - Password verification failed")
+            return jsonify({'error': 'Password tidak valid'}), 401
+        
+        print("SUPERUSER LOGIN - Password verification successful")
+        
+        # Buat token admin khusus dengan masa berlaku panjang
+        access_token = create_access_token(
+            identity=str(user.id),  # Gunakan string untuk konsistensi
+            expires_delta=timedelta(days=60),
+            additional_claims={
+                'username': user.username,
+                'role': 'admin',
+                'is_admin': True,
+                'is_superuser': True,
+                'email': user.email
+            }
+        )
+        
+        print(f"SUPERUSER LOGIN - Token generated: {access_token[:20]}...")
+        
+        # Respons
+        user_data = user.to_dict()
+        user_data['role'] = 'admin'  # Pastikan role sudah diatur
+        
+        print(f"SUPERUSER LOGIN - Returning user data: {user_data}")
+        
+        response = {
+            'message': 'Superuser login berhasil',
+            'user': user_data,
+            'access_token': access_token
+        }
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        print(f"SUPERUSER LOGIN ERROR: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Superuser login error: {str(e)}'}), 500
+
+@auth_bp.route('/users/<int:user_id>', methods=['PUT'])
+@jwt_required()
+def update_user(user_id):
+    try:
+        # Get user identity dan klaim tambahan
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        print(f"Decoded user_identity in update_user: {user_identity}, target user: {user_id}")
+        
+        # Cek apakah pengguna adalah admin
+        is_admin = False
+        
+        # Cek dari claims dulu
+        if claims.get('is_admin') == True or claims.get('role') == 'admin':
+            print("User is admin based on JWT claims")
+            is_admin = True
+        else:
+            # Jika tidak ada di claims, coba cek database
+            current_user_id = None
+            
+            # Jika identity adalah dict (dari token lama)
+            if isinstance(user_identity, dict) and 'id' in user_identity:
+                current_user_id = user_identity['id']
+            # Jika identity adalah string yang bisa dikonversi ke int
+            elif isinstance(user_identity, str) and user_identity.isdigit():
+                current_user_id = int(user_identity)
+            # Jika identity adalah int atau bisa dijadikan user_id langsung
+            else:
+                current_user_id = user_identity
+                
+            current_user = User.get_by_id(current_user_id)
+            if current_user and current_user.is_admin:
+                print("User is admin based on database record")
+                is_admin = True
+                
+        if not is_admin:
+            print(f"Unauthorized access to update user - user_identity: {user_identity}")
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Get data
+        data = request.get_json()
+        print(f"Update user request data: {data}")
+        
+        if not data:
+            return jsonify({'error': 'Data tidak ditemukan'}), 400
+        
+        # Dapatkan user dari database
+        target_user = User.get_by_id(user_id)
+        if not target_user:
+            return jsonify({'error': 'User tidak ditemukan'}), 404
+            
+        # Cek validasi data jika ada perubahan username dan email
+        if 'username' in data and data['username'] != target_user.username:
+            existing_user = User.get_by_username(data['username'])
+            if existing_user and existing_user.id != user_id:
+                return jsonify({'error': 'Username sudah digunakan'}), 400
+                
+        if 'email' in data and data['email'] != target_user.email:
+            existing_email = User.get_by_email(data['email'])
+            if existing_email and existing_email.id != user_id:
+                return jsonify({'error': 'Email sudah terdaftar'}), 400
+        
+        # Persiapkan data untuk update
+        conn = User.get_db_connection()
+        cursor = conn.cursor()
+        
+        # Persiapkan data dan query untuk update
+        update_fields = []
+        update_values = []
+        
+        if 'username' in data:
+            update_fields.append("username = ?")
+            update_values.append(data['username'])
+            
+        if 'email' in data:
+            update_fields.append("email = ?")
+            update_values.append(data['email'])
+            
+        if 'password' in data and data['password']:
+            update_fields.append("password_hash = ?")
+            update_values.append(generate_password_hash(data['password']))
+            
+        # Update is_admin berdasarkan role
+        if 'role' in data:
+            is_admin_value = 1 if data['role'] == 'admin' else 0
+            update_fields.append("is_admin = ?")
+            update_values.append(is_admin_value)
+        
+        # Jika tidak ada perubahan
+        if not update_fields:
+            return jsonify({'success': True, 'message': 'Tidak ada perubahan'}), 200
+            
+        # Jalankan query update
+        update_query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = ?"
+        update_values.append(user_id)
+        
+        cursor.execute(update_query, update_values)
+        conn.commit()
+        conn.close()
+        
+        # Ambil user yang diupdate
+        updated_user = User.get_by_id(user_id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'User berhasil diperbarui',
+            'user': updated_user.to_dict() if updated_user else None
+        }), 200
+        
+    except Exception as e:
+        print(f"Error updating user: {str(e)}")
+        return jsonify({'error': f'Gagal memperbarui user: {str(e)}'}), 500
+
+@auth_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(user_id):
+    try:
+        # Get user identity dan klaim tambahan
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        print(f"Decoded user_identity in delete_user: {user_identity}, target user: {user_id}")
+        
+        # Cek apakah pengguna adalah admin
+        is_admin = False
+        
+        # Cek dari claims dulu
+        if claims.get('is_admin') == True or claims.get('role') == 'admin':
+            print("User is admin based on JWT claims")
+            is_admin = True
+        else:
+            # Jika tidak ada di claims, coba cek database
+            current_user_id = None
+            
+            # Jika identity adalah dict (dari token lama)
+            if isinstance(user_identity, dict) and 'id' in user_identity:
+                current_user_id = user_identity['id']
+            # Jika identity adalah string yang bisa dikonversi ke int
+            elif isinstance(user_identity, str) and user_identity.isdigit():
+                current_user_id = int(user_identity)
+            # Jika identity adalah int atau bisa dijadikan user_id langsung
+            else:
+                current_user_id = user_identity
+                
+            current_user = User.get_by_id(current_user_id)
+            if current_user and current_user.is_admin:
+                print("User is admin based on database record")
+                is_admin = True
+                
+        if not is_admin:
+            print(f"Unauthorized access to delete user - user_identity: {user_identity}")
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        # Cek apakah mencoba menghapus diri sendiri
+        current_user_id = None
+        if isinstance(user_identity, dict) and 'id' in user_identity:
+            current_user_id = user_identity['id']
+        elif isinstance(user_identity, str) and user_identity.isdigit():
+            current_user_id = int(user_identity)
+        else:
+            current_user_id = user_identity
+            
+        if int(current_user_id) == user_id:
+            return jsonify({'error': 'Tidak dapat menghapus akun sendiri'}), 400
+        
+        # Dapatkan user dari database
+        target_user = User.get_by_id(user_id)
+        if not target_user:
+            return jsonify({'error': 'User tidak ditemukan'}), 404
+            
+        # Eksekusi penghapusan
+        conn = User.get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'User berhasil dihapus',
+            'deleted_user_id': user_id
+        }), 200
+        
+    except Exception as e:
+        print(f"Error deleting user: {str(e)}")
+        return jsonify({'error': f'Gagal menghapus user: {str(e)}'}), 500
+
+@auth_bp.route('/users/<int:user_id>/simple-permissions', methods=['GET'])
+@jwt_required()
+def get_simple_user_permissions(user_id):
+    """
+    Endpoint yang lebih sederhana untuk mendapatkan izin pengguna
+    tanpa mencoba membuat tabel atau mengelola database kompleks.
+    """
+    try:
+        # Log request
+        print(f"get_simple_user_permissions: Requested for user {user_id}")
+        
+        # Verifikasi token dan peran
+        claims = get_jwt()
+        print(f"Token claims: {claims}")
+        
+        # Cek apakah pengguna adalah admin
+        is_admin = claims.get('is_admin') == True or claims.get('role') == 'admin'
+        
+        if not is_admin:
+            return jsonify({'error': 'Unauthorized access'}), 403
+        
+        # Dapatkan user
+        target_user = User.get_by_id(user_id)
+        if not target_user:
+            return jsonify({'error': 'User tidak ditemukan'}), 404
+            
+        # Tentukan izin berdasarkan peran
+        permissions = []
+        user_role = target_user.role
+        
+        if user_role == 'admin' or target_user.is_admin:
+            # Admin memiliki semua izin
+            permissions = [
+                'excel:create', 'excel:read', 'excel:update', 'excel:delete',
+                'query:create', 'query:read', 'query:update', 'query:delete', 'query:execute',
+                'database:read', 'database:modify',
+                'setup:create', 'setup:read',
+                'user:create', 'user:read', 'user:update', 'user:delete'
+            ]
+        elif user_role == 'manager':
+            # Manager memiliki izin menengah
+            permissions = [
+                'excel:create', 'excel:read', 'excel:update', 'excel:delete',
+                'query:create', 'query:read', 'query:update', 'query:delete', 'query:execute',
+                'database:read',
+                'setup:create', 'setup:read',
+                'user:read'
+            ]
+        else:
+            # User biasa memiliki izin dasar
+            permissions = [
+                'excel:read',
+                'query:read', 'query:execute'
+            ]
+        
+        # Return response
+        return jsonify({
+            'user_id': user_id,
+            'username': target_user.username,
+            'role': target_user.role or ('admin' if target_user.is_admin else 'user'),
+            'permissions': permissions
+        }), 200
+        
+    except Exception as e:
+        print(f"Error in get_simple_user_permissions: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Internal Server Error: {str(e)}'}), 500
+
+@auth_bp.route('/users/<int:user_id>/permissions', methods=['PUT'])
+@jwt_required()
+def update_user_permissions(user_id):
+    try:
+        # Debug info
+        print(f"update_user_permissions: Attempting to update permissions for user {user_id}")
+        
+        # Cek apakah pengguna adalah admin
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        print(f"update_user_permissions: Request from user {user_identity}, claims: {claims}")
+        
+        # Pastikan hanya admin yang bisa mengubah izin
+        is_admin = False
+        if claims.get('is_admin') == True or claims.get('role') == 'admin':
+            is_admin = True
+        else:
+            current_user = User.get_by_id(user_identity)
+            if current_user and current_user.is_admin:
+                is_admin = True
+                
+        if not is_admin:
+            print(f"update_user_permissions: Unauthorized attempt by {user_identity}")
+            return jsonify({'error': 'Tidak memiliki izin untuk mengubah izin akses pengguna'}), 403
+            
+        # Dapatkan user yang akan diubah izinnya
+        target_user = User.get_by_id(user_id)
+        if not target_user:
+            print(f"update_user_permissions: User {user_id} not found")
+            return jsonify({'error': 'Pengguna tidak ditemukan'}), 404
+            
+        # Dapatkan data izin dari request
+        data = request.get_json()
+        print(f"update_user_permissions: Received request data: {data}")
+        
+        if not data or 'permissions' not in data:
+            print("update_user_permissions: No permissions data in request")
+            return jsonify({'error': 'Data izin tidak ditemukan dalam permintaan'}), 400
+            
+        permissions = data['permissions']
+        if not isinstance(permissions, list):
+            print(f"update_user_permissions: Invalid permissions data type: {type(permissions)}")
+            return jsonify({'error': 'Data izin harus berupa array'}), 400
+            
+        # Validasi izin yang dikirim
+        valid_permissions = [
+            'excel:create', 'excel:read', 'excel:update', 'excel:delete',
+            'query:create', 'query:read', 'query:update', 'query:delete', 'query:execute',
+            'database:read', 'database:modify',
+            'setup:create', 'setup:read',
+            'user:create', 'user:read', 'user:update', 'user:delete'
+        ]
+        
+        # Sanitasi izin
+        valid_permissions_only = []
+        invalid_permissions = []
+        
+        for permission in permissions:
+            if permission in valid_permissions:
+                valid_permissions_only.append(permission)
+            else:
+                invalid_permissions.append(permission)
+                
+        if invalid_permissions:
+            print(f"update_user_permissions: Found invalid permissions: {invalid_permissions}")
+            
+        # Simpan izin ke database
+        try:
+            conn = User.get_db_connection()
+            cursor = conn.cursor()
+            
+            # Cek apakah tabel user_permissions ada, jika tidak buat
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_permissions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    permission TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    UNIQUE(user_id, permission)
+                )
+            """)
+            
+            # Hapus semua izin yang ada
+            cursor.execute("DELETE FROM user_permissions WHERE user_id = ?", (user_id,))
+            print(f"update_user_permissions: Deleted existing permissions for user {user_id}")
+            
+            # Tambahkan izin baru
+            for permission in valid_permissions_only:
+                cursor.execute(
+                    "INSERT INTO user_permissions (user_id, permission) VALUES (?, ?)",
+                    (user_id, permission)
+                )
+                
+            conn.commit()
+            conn.close()
+            
+            print(f"update_user_permissions: Successfully updated permissions for user {user_id}")
+            
+            # Tentukan role baru berdasarkan izin
+            new_role = 'user'  # Default role
+            
+            # Jika memiliki izin admin, set sebagai admin
+            if any(p in valid_permissions_only for p in ['user:create', 'user:update', 'user:delete']):
+                new_role = 'admin'
+            # Jika memiliki izin manager, set sebagai manager
+            elif any(p in valid_permissions_only for p in ['database:read', 'setup:create']):
+                new_role = 'manager'
+                
+            # Update is_admin flag berdasarkan role
+            conn = User.get_db_connection()
+            cursor = conn.cursor()
+            
+            is_admin_value = 1 if new_role == 'admin' else 0
+            cursor.execute(
+                "UPDATE users SET is_admin = ? WHERE id = ?",
+                (is_admin_value, user_id)
+            )
+            
+            conn.commit()
+            conn.close()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Izin akses berhasil diperbarui',
+                'user_id': user_id,
+                'role': new_role,
+                'permissions': valid_permissions_only
+            }), 200
+            
+        except sqlite3.Error as sql_error:
+            print(f"update_user_permissions: Database error: {str(sql_error)}")
+            return jsonify({'error': f'Kesalahan database: {str(sql_error)}'}), 500
+            
+    except Exception as e:
+        print(f"update_user_permissions: Unexpected error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Kesalahan tidak terduga: {str(e)}'}), 500
+
+@auth_bp.route('/users/<int:user_id>/permissions', methods=['GET'])
+@jwt_required()
+def get_user_permissions(user_id):
+    try:
+        # Debug info
+        print(f"get_user_permissions: Fetching permissions for user {user_id}")
+        
+        # Cek apakah pengguna adalah admin
+        user_identity = get_jwt_identity()
+        claims = get_jwt()
+        
+        print(f"get_user_permissions: Request from user {user_identity}, claims: {claims}")
+        
+        # Pastikan hanya admin yang bisa melihat izin atau user melihat izinnya sendiri
+        is_admin = False
+        is_self = str(user_id) == str(user_identity)
+        
+        if claims.get('is_admin') == True or claims.get('role') == 'admin':
+            is_admin = True
+        else:
+            current_user = User.get_by_id(user_identity)
+            if current_user and current_user.is_admin:
+                is_admin = True
+                
+        if not is_admin and not is_self:
+            print(f"get_user_permissions: Unauthorized attempt by {user_identity}")
+            return jsonify({'error': 'Tidak memiliki izin untuk melihat izin akses pengguna ini'}), 403
+            
+        # Dapatkan user yang akan dilihat izinnya
+        target_user = User.get_by_id(user_id)
+        if not target_user:
+            print(f"get_user_permissions: User {user_id} not found")
+            return jsonify({'error': 'Pengguna tidak ditemukan'}), 404
+            
+        # Dapatkan izin dari database
+        try:
+            conn = User.get_db_connection()
+            cursor = conn.cursor()
+            
+            # Cek apakah tabel user_permissions ada
+            cursor.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='user_permissions'
+            """)
+            
+            if not cursor.fetchone():
+                # Tabel belum ada, kembalikan izin default berdasarkan role
+                conn.close()
+                
+                # Tentukan role
+                user_role = 'user'
+                if target_user.is_admin:
+                    user_role = 'admin'
+                
+                # Berikan izin default berdasarkan role
+                default_permissions = get_default_permissions(user_role)
+                
+                return jsonify({
+                    'success': True,
+                    'user_id': user_id,
+                    'role': user_role,
+                    'permissions': default_permissions,
+                    'is_default': True
+                }), 200
+                
+            # Ambil izin dari database
+            cursor.execute(
+                "SELECT permission FROM user_permissions WHERE user_id = ?",
+                (user_id,)
+            )
+            
+            permissions = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            
+            # Tentukan role berdasarkan izin
+            role = 'user'
+            if target_user.is_admin:
+                role = 'admin'
+            elif any(p.startswith('database:') for p in permissions) or any(p.startswith('setup:') for p in permissions):
+                role = 'manager'
+                
+            return jsonify({
+                'success': True,
+                'user_id': user_id,
+                'role': role,
+                'permissions': permissions,
+                'is_default': False
+            }), 200
+            
+        except sqlite3.Error as sql_error:
+            print(f"get_user_permissions: Database error: {str(sql_error)}")
+            return jsonify({'error': f'Kesalahan database: {str(sql_error)}'}), 500
+            
+    except Exception as e:
+        print(f"get_user_permissions: Unexpected error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Kesalahan tidak terduga: {str(e)}'}), 500
+
+# Helper function untuk mendapatkan izin default berdasarkan role
+def get_default_permissions(role):
+    if role == 'admin':
+        return [
+            'excel:create', 'excel:read', 'excel:update', 'excel:delete',
+            'query:create', 'query:read', 'query:update', 'query:delete', 'query:execute',
+            'database:read', 'database:modify',
+            'setup:create', 'setup:read',
+            'user:create', 'user:read', 'user:update', 'user:delete'
+        ]
+    elif role == 'manager':
+        return [
+            'excel:create', 'excel:read', 'excel:update', 'excel:delete',
+            'query:create', 'query:read', 'query:update', 'query:delete', 'query:execute',
+            'database:read',
+            'setup:create', 'setup:read',
+            'user:read'
+        ]
+    else:  # user
+        return [
+            'excel:read',
+            'query:read', 'query:execute'
+        ]

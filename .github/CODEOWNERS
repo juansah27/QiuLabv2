@@ -1,0 +1,23 @@
+# Pemilik Kode (CODEOWNERS) File
+# Setiap baris menentukan file pattern dan pemilik (owners)
+# owners akan otomatis di-request sebagai reviewers untuk Pull Requests 
+
+# Default owners untuk seluruh repositori jika tidak ada match lain
+*       @qiulab-admin
+
+# Backend code owners
+/backend/  @qiulab-backend-team
+
+# Frontend code owners
+/frontend/ @qiulab-frontend-team
+
+# DevOps code owners
+/docker-compose.yml   @qiulab-devops-team
+/backend/Dockerfile   @qiulab-devops-team
+/frontend/Dockerfile  @qiulab-devops-team
+/.github/             @qiulab-devops-team
+/run-docker.*         @qiulab-devops-team
+/deploy.*             @qiulab-devops-team
+
+# Doc code owners
+*.md                  @qiulab-docs-team 

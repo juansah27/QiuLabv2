@@ -1,0 +1,21 @@
+{
+  "name": "QiuLab",
+  "short_name": "QiuLab",
+  "description": "Transform Anything. Track Everything.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#00BCD4",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "logo192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+} 
