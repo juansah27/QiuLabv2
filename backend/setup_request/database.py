@@ -317,10 +317,11 @@ def get_setup_request_statistics(period='week', db_file=None):
             date_filter = "AND datetime(created_at, '+7 hours') >= datetime('now', '+7 hours', 'start of month')"
         
         # Get unique process type counts (count distinct request_ids per process type)
+        # Exclude 'Gift' because we count gifts separately by gift_type to avoid double counting
         cursor.execute(f"""
         SELECT process_type, COUNT(DISTINCT request_id) as count 
         FROM setup_request_analytics 
-        WHERE process_type IS NOT NULL AND process_type != '' {date_filter}
+        WHERE process_type IS NOT NULL AND process_type != '' AND process_type != 'Gift' {date_filter}
         GROUP BY process_type
         """)
         process_type_counts = {row['process_type']: row['count'] for row in cursor.fetchall()}
@@ -406,10 +407,11 @@ def get_setup_request_statistics(period='week', db_file=None):
             })
         
         # Get unique gift type counts (count distinct request_ids per gift type)
+        # Only count gift_types where process_type is 'Gift' to avoid counting Bundle/Supplementary rows
         cursor.execute(f"""
         SELECT gift_type, COUNT(DISTINCT request_id) as count 
         FROM setup_request_analytics 
-        WHERE gift_type IS NOT NULL AND gift_type != '' {date_filter}
+        WHERE gift_type IS NOT NULL AND gift_type != '' AND process_type = 'Gift' {date_filter}
         GROUP BY gift_type
         """)
         gift_type_counts = {row['gift_type']: row['count'] for row in cursor.fetchall()}
@@ -550,7 +552,6 @@ def get_setup_request_statistics(period='week', db_file=None):
             'process_types': {
                 'bundle': process_type_counts.get('Bundle', 0),
                 'supplementary': process_type_counts.get('Supplementary', 0),
-                'gift': process_type_counts.get('Gift', 0),
                 'gift_type_2': gift_type_counts.get('2', 0),
                 'gift_type_3': gift_type_counts.get('3', 0)
             },
@@ -575,7 +576,8 @@ def get_setup_request_statistics(period='week', db_file=None):
             'process_types': {
                 'bundle': 0,
                 'supplementary': 0,
-                'gift': 0
+                'gift_type_2': 0,
+                'gift_type_3': 0
             },
             'top_clients': [],
             'gift_types': {

@@ -117,9 +117,9 @@ const GenerateQueries = () => {
     }
 
     // Validasi format alfanumerik (dengan spasi)
-    const invalidIds = idList.filter(id => !/^[a-zA-Z0-9-_\/+.\s]+$/.test(id));
+    const invalidIds = idList.filter(id => !/^[a-zA-Z0-9-_\/+.&\s]+$/.test(id));
     if (invalidIds.length > 0) {
-      setError(`ID harus alfanumerik (menerima karakter -, _, /, +, ., dan spasi): ${invalidIds.join(', ')}`);
+      setError(`ID harus alfanumerik (menerima karakter -, _, /, +, ., &, dan spasi): ${invalidIds.join(', ')}`);
       return false;
     }
 

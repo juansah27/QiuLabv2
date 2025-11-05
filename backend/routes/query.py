@@ -1270,14 +1270,14 @@ def search_refreshdb():
             import re
             invalid_terms = []
             for term in search_terms:
-                # Allow alphanumeric, hyphens, underscores, dots, forward slashes, and spaces
-                if not re.match(r'^[a-zA-Z0-9\-_\.\/\s]+$', term):
+                # Allow alphanumeric, hyphens, underscores, dots, forward slashes, ampersand, and spaces
+                if not re.match(r'^[a-zA-Z0-9\-_\.\/&\s]+$', term):
                     invalid_terms.append(term)
             
             if invalid_terms:
                 return jsonify({
                     'status': 'error',
-                    'error': f'Invalid search terms found: {invalid_terms[:5]}. Only alphanumeric characters, hyphens, underscores, dots, forward slashes, and spaces are allowed.'
+                    'error': f'Invalid search terms found: {invalid_terms[:5]}. Only alphanumeric characters, hyphens, underscores, dots, forward slashes, ampersand, and spaces are allowed.'
                 }), 400
             
             # Check if number of search terms exceeds limit
