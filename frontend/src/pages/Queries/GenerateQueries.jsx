@@ -111,8 +111,8 @@ const GenerateQueries = () => {
     }
 
     // Validasi jumlah maksimal ID (kecuali untuk grup query_in_custom)
-    if (selectedGroup !== 'query_in_custom' && idList.length > 500) {
-      setError('Maksimal 500 ID diperbolehkan');
+    if (selectedGroup !== 'query_in_custom' && idList.length > 1000) {
+      setError('Maksimal 1000 ID diperbolehkan');
       return false;
     }
 

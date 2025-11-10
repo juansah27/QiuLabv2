@@ -42,7 +42,7 @@ const IdInput = ({
         <p className="text-sm text-muted-foreground">
           {isCustomInQuery 
             ? "Masukkan ID alfanumerik (menerima karakter -, _, /, dan spasi). Tidak ada batasan jumlah maksimal." 
-            : "Masukkan ID alfanumerik (menerima karakter -, _, /, dan spasi). Maksimal 500 ID."}
+            : "Masukkan ID alfanumerik (menerima karakter -, _, /, dan spasi). Maksimal 1000 ID."}
         </p>
       </div>
 
