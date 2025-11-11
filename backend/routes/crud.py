@@ -211,6 +211,21 @@ def delete_record(table_name, record_id):
             "message": str(e)
         }), 500 
 
+@crud_bp.route('/api/monitoring/remarks', methods=['GET'])
+def get_monitoring_remarks():
+    """Get all remarks from monitoring table"""
+    try:
+        db_path = os.path.join(os.path.dirname(__file__), '../instance/app.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute('SELECT system_ref_id, remark FROM monitoring WHERE remark IS NOT NULL')
+        remarks = {row['system_ref_id']: row['remark'] for row in cursor.fetchall()}
+        conn.close()
+        return jsonify({'status': 'success', 'data': remarks}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
 @crud_bp.route('/api/monitoring/remark', methods=['POST'])
 def update_monitoring_remark():
     data = request.get_json()

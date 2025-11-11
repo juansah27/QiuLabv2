@@ -3,24 +3,9 @@ import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer, PieChart, Pie, 
 import { useMediaQuery, useTheme } from '@mui/material';
 import { normalizeStatusName, getStatusGroups, getStatusColors, getStatusPriorities } from '../../../config/statusGroups';
 
-// Fungsi helper untuk mendapatkan nilai remark dari localStorage jika tersedia
+// Fungsi helper untuk mendapatkan nilai remark (sudah di-merge dari backend)
 const getRemarkValue = (rowData) => {
-  try {
-    // Periksa localStorage untuk remark yang diedit
-    const savedRemarks = localStorage.getItem('table_remarks');
-    if (savedRemarks) {
-      const remarkData = JSON.parse(savedRemarks);
-      const rowKey = JSON.stringify(rowData);
-      
-      if (remarkData[rowKey] && remarkData[rowKey]['Remark'] !== undefined) {
-        return remarkData[rowKey]['Remark'];
-      }
-    }
-  } catch (error) {
-    console.error('Error saat membaca remark dari localStorage:', error);
-  }
-  
-  // Kembalikan nilai asli jika tidak ada di localStorage
+  // Remark sudah di-merge dari database di backend
   return rowData.Remark;
 };
 

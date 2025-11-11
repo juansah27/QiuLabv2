@@ -16,24 +16,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Fungsi untuk mendapatkan nilai remark dari localStorage jika tersedia
+  // Fungsi untuk mendapatkan nilai remark dari data (sudah di-merge dari backend)
   const getRemarkValue = (rowData, columnId) => {
-    try {
-      // Periksa localStorage untuk remark yang diedit
-      const savedRemarks = localStorage.getItem('table_remarks');
-      if (savedRemarks) {
-        const remarkData = JSON.parse(savedRemarks);
-        const rowKey = JSON.stringify(rowData);
-        
-        if (remarkData[rowKey] && remarkData[rowKey][columnId] !== undefined) {
-          return remarkData[rowKey][columnId];
-        }
-      }
-    } catch (error) {
-      console.error('Error saat membaca remark dari localStorage:', error);
-    }
-    
-    // Kembalikan nilai asli jika tidak ada di localStorage
+    // Remark sudah di-merge dari database di backend
     return rowData[columnId];
   };
   
@@ -179,45 +164,34 @@ const Dashboard = () => {
     }
   }, [data]);
   
-  // Juga perbarui saat localStorage berubah (dengan menggunakan event listener)
+  // Perbarui statistik saat data berubah (remark sudah dari backend)
   useEffect(() => {
-    const handleStorageChange = (event) => {
-      if (event.key === 'table_remarks') {
-        // Jika localStorage berubah, perbarui statistik
-        if (Array.isArray(data) && data.length > 0) {
-          const stats = {
-            'Pending Verifikasi': 0,
-            'Cancel': 0,
-            'IN_Cancel': 0,
-            'N/A': 0
-          };
-          
-          data.forEach(row => {
-            const remarkValue = getRemarkValue(row, 'Remark');
-            
-            if (remarkValue === 'Pending Verifikasi') {
-              stats['Pending Verifikasi']++;
-            } else if (remarkValue === 'Cancel') {
-              stats['Cancel']++;
-            } else if (remarkValue === 'IN_Cancel') {
-              stats['IN_Cancel']++;
-            } else if (remarkValue === null || remarkValue === undefined || remarkValue === '') {
-              stats['N/A']++;
-            }
-          });
-          
-          setRemarkStats(stats);
+    if (Array.isArray(data) && data.length > 0) {
+      const stats = {};
+      getStatusGroups().forEach(groupName => {
+        stats[groupName] = 0;
+      });
+      stats['N/A'] = 0;
+      
+      data.forEach(row => {
+        const remarkValue = getRemarkValue(row, 'Remark');
+        
+        // Count berdasarkan status group yang ada
+        let counted = false;
+        getStatusGroups().forEach(groupName => {
+          if (remarkValue === groupName) {
+            stats[groupName]++;
+            counted = true;
+          }
+        });
+        
+        if (!counted && (remarkValue === null || remarkValue === undefined || remarkValue === '')) {
+          stats['N/A']++;
         }
-      }
-    };
-    
-    // Tambahkan event listener untuk storage changes
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+      });
+      
+      setRemarkStats(stats);
+    }
   }, [data]);
   
   // Render komponen Dashboard

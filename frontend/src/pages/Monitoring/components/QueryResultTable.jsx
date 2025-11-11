@@ -533,22 +533,38 @@ const QueryResultTable = ({
       .filter(Boolean);
   }, [allColumns, visibleColumnIds]);
   
-  // Load preferensi kolom dan remarks dari localStorage saat komponen mount
+  // Load preferensi kolom dan remarks dari API saat komponen mount
   useEffect(() => {
-    try {
-      // Load remarks
-      const savedRemarks = localStorage.getItem('table_remarks');
-      if (savedRemarks) {
-        setRemarks(JSON.parse(savedRemarks));
+    const loadInitialData = async () => {
+      try {
+        // Load remarks dari API
+        const response = await api.get('/api/monitoring/remarks');
+        if (response.data.status === 'success') {
+          setRemarks(response.data.data || {});
+        }
+      } catch (error) {
+        console.error('Error loading remarks from API:', error);
       }
       
-      // Load preferensi kolom
-      const savedColumns = localStorage.getItem('table_visible_columns');
-      if (savedColumns) {
-        setVisibleColumnIds(JSON.parse(savedColumns));
+      try {
+        // Load preferensi kolom dari localStorage (ini bisa tetap di localStorage)
+        const savedColumns = localStorage.getItem('table_visible_columns');
+        if (savedColumns) {
+          setVisibleColumnIds(JSON.parse(savedColumns));
+        }
+      } catch (error) {
+        console.error('Error loading columns from localStorage:', error);
       }
-    } catch (error) {
-      console.error('Error loading data from localStorage:', error);
+    };
+    
+    loadInitialData();
+    
+    // Clear old localStorage remarks on mount (migration cleanup)
+    try {
+      localStorage.removeItem('table_remarks');
+      localStorage.removeItem('tableRemarks');
+    } catch (e) {
+      console.error('Error clearing old localStorage:', e);
     }
   }, []);
   
@@ -558,13 +574,6 @@ const QueryResultTable = ({
       localStorage.setItem('table_visible_columns', JSON.stringify(visibleColumnIds));
     }
   }, [visibleColumnIds]);
-  
-  // Simpan remarks ke localStorage saat berubah
-  useEffect(() => {
-    if (Object.keys(remarks).length > 0) {
-      localStorage.setItem('table_remarks', JSON.stringify(remarks));
-    }
-  }, [remarks]);
   
   // Handler untuk mengubah kolom yang ditampilkan
   const handleColumnVisibilityChange = (selectedColumns) => {
@@ -867,9 +876,6 @@ const QueryResultTable = ({
       value = null; // Simpan sebagai null jika kosong
     }
 
-    // Dapatkan ID unik untuk baris ini
-    const rowKey = JSON.stringify(rowData);
-
     // Jika kolom Remark, update ke backend
     if (columnId === 'Remark' && rowData.SystemRefId) {
       try {
@@ -877,17 +883,18 @@ const QueryResultTable = ({
           system_ref_id: rowData.SystemRefId,
           remark: value
         });
-        // Tidak perlu onRefresh, cukup update baris lokal (optimistic update)
+        
+        // Update state lokal dengan SystemRefId sebagai key
+        setRemarks(prev => ({
+          ...prev,
+          [rowData.SystemRefId]: value
+        }));
       } catch (err) {
         console.error('Gagal update remark ke backend:', err);
+        showNotification('Gagal menyimpan remark', 'error');
       }
     }
-
-    // Simpan perubahan lokal hanya untuk edit sementara (tidak ke localStorage)
-    setRemarks(prev => ({
-      ...prev,
-      [rowKey]: {...(prev[rowKey] || {}), [columnId]: value}
-    }));
+    
     setEditingCell(null);
 
     // Optimistic update: update Remark di data lokal (tampilan langsung berubah)
@@ -1379,11 +1386,7 @@ const QueryResultTable = ({
             remark: update.remark
           });
           // Update local state only if backend update succeeds
-          const rowKey = JSON.stringify(matchingRow);
-          updatedRemarks[rowKey] = {
-            ...(updatedRemarks[rowKey] || {}),
-            'Remark': update.remark
-          };
+          updatedRemarks[update.id] = update.remark;
           successCount++;
         } catch (err) {
           console.error('Failed to update remark for', update.id, err);
@@ -1391,11 +1394,6 @@ const QueryResultTable = ({
       }
     }
     setRemarks(updatedRemarks);
-    try {
-      localStorage.setItem('tableRemarks', JSON.stringify(updatedRemarks));
-    } catch (err) {
-      console.error('Error saving remarks to localStorage:', err);
-    }
     setShowBulkUpdateModal(false);
     showNotification(`Berhasil update ${successCount} remark ke server`, 'success');
   };
