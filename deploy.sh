@@ -154,7 +154,13 @@ setup_frontend() {
   # Build if production
   if [ "$MODE" == "prod" ]; then
     print_message "Building frontend for production..."
-    npm run build
+    if ! npm run build; then
+      print_warning "npm run build failed, retrying with npx vite..."
+      if ! npx --yes vite build --mode production; then
+        print_error "Frontend build failed with npm and npx"
+        exit 1
+      fi
+    fi
   fi
   
   cd ..
