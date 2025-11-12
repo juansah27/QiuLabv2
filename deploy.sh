@@ -192,7 +192,7 @@ start_application() {
     # Frontend
     tmux new-session -d -s qiulab-frontend
     tmux send-keys -t qiulab-frontend "cd $CURRENT_DIR/frontend" Enter
-    tmux send-keys -t qiulab-frontend "npm run dev:network" Enter
+    tmux send-keys -t qiulab-frontend "VITE_USE_NETWORK_IP=true npm run dev:network" Enter
     
     print_success "Development mode started!"
     print_message "Frontend: http://$(hostname -I | awk '{print $1}'):3000"
@@ -213,7 +213,7 @@ start_application() {
     # Frontend
     tmux new-session -d -s qiulab-frontend
     tmux send-keys -t qiulab-frontend "cd $CURRENT_DIR/frontend" Enter
-    tmux send-keys -t qiulab-frontend "npm run preview:network" Enter
+    tmux send-keys -t qiulab-frontend "VITE_USE_NETWORK_IP=true npm run preview:network" Enter
     
     print_success "Production mode started!"
     print_message "Frontend: http://$(hostname -I | awk '{print $1}'):4173"
