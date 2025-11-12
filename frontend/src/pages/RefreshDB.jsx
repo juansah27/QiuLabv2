@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
 import api from '../utils/api';
@@ -17,6 +17,11 @@ const RefreshDB = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [batchMode, setBatchMode] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, percentage: 0 });
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchMeta, setSearchMeta] = useState(null);
+  const [dbStatus, setDbStatus] = useState({ status: 'idle', message: '' });
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' });
   
   // Filter states
   const [filters, setFilters] = useState({});
@@ -103,6 +108,15 @@ const RefreshDB = () => {
         return;
       }
 
+      const willUseBatch = batchMode && searchTerms.length > 100;
+      setHasSearched(true);
+      setSearchMeta({
+        searchTermCount: searchTerms.length,
+        searchType,
+        mode: willUseBatch ? 'batch' : 'single',
+        startedAt: new Date().toISOString()
+      });
+
       if (batchMode && searchTerms.length > 100) {
         // Batch processing for large datasets
         const BATCH_SIZE = 100;
@@ -155,6 +169,11 @@ const RefreshDB = () => {
           message: `Successfully processed ${allResults.length} results from ${searchTerms.length} IDs`,
           severity: 'success'
         });
+        setSearchMeta((prev) => ({
+          ...prev,
+          totalResults: allResults.length,
+          finishedAt: new Date().toISOString()
+        }));
       } else {
         // Single request for smaller datasets
         const response = await api.post('/query/refreshdb/search', {
@@ -171,6 +190,11 @@ const RefreshDB = () => {
               severity: 'info'
             });
           }
+          setSearchMeta((prev) => ({
+            ...prev,
+            totalResults: response.data.data.length,
+            finishedAt: new Date().toISOString()
+          }));
         } else {
           setError(response.data.error || 'Terjadi kesalahan');
         }
@@ -357,10 +381,18 @@ const RefreshDB = () => {
           return false;
         }
         
-        // Check if cell value matches any of the selected filter values
-        if (!filterValues.some(filterValue => 
-          cellValue.toString().toLowerCase().includes(filterValue.toLowerCase())
-        )) {
+        // For Status and Status JDA columns, use exact match; for others, use partial match
+        const isStatusColumn = column === 'Status' || column === 'Status JDA';
+        const cellValueStr = cellValue.toString().toLowerCase();
+        
+        const matches = filterValues.some(filterValue => {
+          const filterValueStr = filterValue.toLowerCase();
+          return isStatusColumn 
+            ? cellValueStr === filterValueStr  // Exact match for Status columns
+            : cellValueStr.includes(filterValueStr);  // Partial match for others
+        });
+        
+        if (!matches) {
           return false;
         }
       }
@@ -390,10 +422,7 @@ const RefreshDB = () => {
 
   // Toggle filter dropdown
   const toggleFilterDropdown = (columnName) => {
-    console.log('Toggle filter dropdown for:', columnName);
-    console.log('Current activeFilterDropdown:', activeFilterDropdown);
     const newValue = activeFilterDropdown === columnName ? null : columnName;
-    console.log('Setting activeFilterDropdown to:', newValue);
     setActiveFilterDropdown(newValue);
   };
 
@@ -407,7 +436,6 @@ const RefreshDB = () => {
 
   // Handle filter checkbox change
   const handleFilterChange = (columnName, value, checked) => {
-    console.log('Filter change:', columnName, value, checked);
     setFilters(prev => {
       const currentFilters = prev[columnName] || [];
       if (checked) {
@@ -463,135 +491,283 @@ const RefreshDB = () => {
   };
 
   // Add click outside listener
-  React.useEffect(() => {
+  useEffect(() => {
     document.addEventListener('click', handleClickOutside);
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
   }, [activeFilterDropdown]);
 
+  // Set default filter "Done" for Status JDA when results appear
+  useEffect(() => {
+    if (results.length > 0 && !filters['Status JDA']) {
+      // Check if "Done" exists in the results
+      const hasDone = results.some(row => {
+        const statusJDA = row['Status JDA'];
+        return statusJDA && statusJDA.toString().toLowerCase() === 'done';
+      });
+      
+      if (hasDone) {
+        setFilters(prev => ({
+          ...prev,
+          'Status JDA': ['Done']
+        }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results.length]); // Only trigger when results change from empty to having data
+
+  const searchInsights = useMemo(() => {
+    if (!results.length) return null;
+
+    const total = results.length;
+    const filtered = filteredResults.length || total;
+    const uniqueBrands = new Set();
+    const uniqueWarehouses = new Set();
+    let liveAwb = 0;
+    let latestRefresh = null;
+    const statusBuckets = {};
+
+    results.forEach((row) => {
+      if (row.Brand) {
+        uniqueBrands.add(row.Brand);
+      }
+      if (row.WhLoc) {
+        uniqueWarehouses.add(row.WhLoc);
+      }
+      if (typeof row.AWBLive === 'string' && row.AWBLive.toLowerCase() === 'live') {
+        liveAwb += 1;
+      }
+      if (row['Refresh time']) {
+        const refreshDate = new Date(row['Refresh time']);
+        if (!Number.isNaN(refreshDate.getTime())) {
+          if (!latestRefresh || refreshDate > latestRefresh) {
+            latestRefresh = refreshDate;
+          }
+        }
+      }
+      const statusKey = (row['Status JDA'] || 'Unknown').toString();
+      statusBuckets[statusKey] = (statusBuckets[statusKey] || 0) + 1;
+    });
+
+    const topStatuses = Object.entries(statusBuckets)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([label, count]) => ({
+        label,
+        count,
+        percentage: Math.round((count / total) * 100)
+      }));
+
+    return {
+      total,
+      filtered,
+      uniqueBrands: uniqueBrands.size,
+      uniqueWarehouses: uniqueWarehouses.size,
+      liveAwb,
+      latestRefresh: latestRefresh ? latestRefresh.toISOString() : null,
+      topStatuses
+    };
+  }, [results, filteredResults]);
+
+  const formatDateTime = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('id-ID', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(date);
+  };
+
+  const toggleStatusQuickFilter = (statusLabel) => {
+    setFilters(prev => {
+      const current = prev['Status JDA'] || [];
+      const exists = current.includes(statusLabel);
+      if (exists) {
+        const updated = current.filter((value) => value !== statusLabel);
+        const nextFilters = { ...prev, 'Status JDA': updated };
+        if (!updated.length) {
+          delete nextFilters['Status JDA'];
+        }
+        return nextFilters;
+      }
+      return {
+        ...prev,
+        'Status JDA': [...current, statusLabel]
+      };
+    });
+  };
+
+  const isStatusQuickFiltered = (statusLabel) => {
+    return Boolean(filters['Status JDA']?.includes(statusLabel));
+  };
+
+  const handleSort = (columnName) => {
+    setSortConfig(prev => ({
+      column: columnName,
+      direction: prev.column === columnName && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const sortedAndFilteredResults = useMemo(() => {
+    let data = [...filteredResults];
+    
+    if (sortConfig.column) {
+      data.sort((a, b) => {
+        const aVal = a[sortConfig.column] || '';
+        const bVal = b[sortConfig.column] || '';
+        const comparison = String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      });
+    }
+    
+    return data;
+  }, [filteredResults, sortConfig]);
+
+  const handleTestConnection = async () => {
+    try {
+      setIsTestingConnection(true);
+      setDbStatus({ status: 'loading', message: 'Menghubungkan ke RefreshDB...' });
+      const response = await api.get('/query/refreshdb/test-connection');
+      const payload = response.data || {};
+      const status = payload.status || 'success';
+      const message = payload.message || 'Koneksi RefreshDB berhasil.';
+      setDbStatus({ status, message });
+      setSnackbar({
+        open: true,
+        message,
+        severity: status === 'warning' ? 'warning' : 'success'
+      });
+    } catch (err) {
+      const message = err.response?.data?.error || 'Gagal menguji koneksi RefreshDB';
+      setDbStatus({ status: 'error', message });
+      setSnackbar({
+        open: true,
+        message,
+        severity: 'error'
+      });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
   return (
-    <div className={`refreshdb-container ${theme === 'dark' ? 'dark' : 'light'}`}>
-      {/* Header Section */}
-      <div className="header-section">
-        <div className="header-content">
-          <div className="logo-section">
-            <div className="logo-icon">🗄️</div>
-            <h1 className="main-title">RefreshDB</h1>
-          </div>
-          <h2 className="subtitle">Advanced Order Search & Management</h2>
-          <p className="description">
-            Cari dan kelola nomor order berdasarkan EntityID, SystemRefID, OrigSystemRefID, AWB, atau semua field dengan dukungan multiple values.
-          </p>
+    <div className={`refreshdb-container table-focused ${theme === 'dark' ? 'dark' : 'light'}`}>
+      {/* Compact Header */}
+      <div className="compact-header">
+        <div className="header-left-compact">
+          <div className="logo-icon-compact">🗄️</div>
+          <h1 className="main-title-compact">RefreshDB</h1>
+          {results.length > 0 && (
+            <span className="results-badge-compact">
+              {filteredResults.length} / {results.length} records
+            </span>
+          )}
+        </div>
+        <div className="header-right-compact">
+          {dbStatus.status !== 'idle' && (
+            <span className={`db-status-badge-compact ${dbStatus.status}`}>
+              {dbStatus.status === 'loading' ? 'Testing...' : dbStatus.message}
+            </span>
+          )}
+          <button
+            onClick={handleTestConnection}
+            disabled={isTestingConnection}
+            className={`icon-button ${isTestingConnection ? 'loading' : ''}`}
+            title="Test Connection"
+          >
+            🧪
+          </button>
         </div>
       </div>
 
       {/* Search Section */}
-      <div className="search-card">
-        <div className="card-header">
-          <span className="card-icon">🔍</span>
-          <h3>Search Configuration</h3>
-        </div>
-        
-        <div className="search-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Search Type</label>
-              <select 
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value)}
-                disabled={loading}
-                className="select-input"
-              >
-                <option value="entityid">EntityID (Default)</option>
-                <option value="systemrefid">SystemRefID</option>
-                <option value="origsystemrefid">OrigSystemRefID</option>
-                <option value="awb">AWB</option>
-                <option value="all">All Fields</option>
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label>Processing Mode</label>
-              <div className="mode-toggle">
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={batchMode}
-                    onChange={(e) => setBatchMode(e.target.checked)}
-                    disabled={loading}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-                <span className="mode-label">
-                  {batchMode ? 'Batch Mode' : 'Single Mode'}
-                  <span className="mode-description">
-                    {batchMode ? ' (Supports 4000+ IDs)' : ' (Max 100 IDs)'}
-                  </span>
-                </span>
-              </div>
-            </div>
-            
-            <div className="form-group textarea-group">
-              <label>Search by {searchType.toUpperCase()}</label>
+      <div className="search-card-collapsible">
+        <div className="search-form-compact">
+          <div className="form-row-compact">
+            <div className="form-group-compact textarea-group-compact">
+              <label>Search Terms</label>
               <textarea
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={`Enter ${searchType} values...
-• One per line
-• Comma separated
-• Mixed format
-• ${batchMode ? 'Supports 4000+ IDs with batch processing' : 'Maximum 100 IDs per search'}
-
-Examples:
-BLI12181874766-284
-BLI12181886055-284,BLI12181925864-284
-DST-580066702183793668`}
+                placeholder={`Enter IDs (one per line or comma separated)...`}
                 disabled={loading}
-                rows={4}
-                className="textarea-input"
+                rows={3}
+                className="textarea-input-compact"
               />
             </div>
             
-            <div className="form-group button-group">
-              <button
-                onClick={handleSearch}
-                disabled={loading || !searchTerm.trim()}
-                className={`search-button ${loading ? 'loading' : ''}`}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner"></span>
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <span className="button-icon">🔍</span>
-                    Search
-                  </>
-                )}
-              </button>
+            <div className="form-controls-row">
+              <div className="form-group-compact">
+                <label>Type</label>
+                <select 
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value)}
+                  disabled={loading}
+                  className="select-input-compact"
+                >
+                  <option value="entityid">EntityID</option>
+                  <option value="systemrefid">SystemRefID</option>
+                  <option value="origsystemrefid">OrigSystemRefID</option>
+                  <option value="awb">AWB</option>
+                  <option value="all">All Fields</option>
+                </select>
+              </div>
               
-              {searchTerm.trim() && (
-                <div className="item-count">
-                  <span className="count-badge">{getSearchTermsCount()}</span>
-                  <span className="count-label">Items</span>
+              <div className="form-group-compact">
+                <label>Mode</label>
+                <div className="mode-toggle-compact">
+                  <label className="toggle-switch-compact">
+                    <input
+                      type="checkbox"
+                      checked={batchMode}
+                      onChange={(e) => setBatchMode(e.target.checked)}
+                      disabled={loading}
+                    />
+                    <span className="toggle-slider-compact"></span>
+                  </label>
+                  <span className="mode-label-compact">
+                    {batchMode ? 'Batch' : 'Single'}
+                  </span>
                 </div>
-              )}
+              </div>
               
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setResults([]);
-                  setError('');
-                }}
-                disabled={loading}
-                className="clear-button"
-                title="Clear all"
-              >
-                <span className="button-icon">🔄</span>
-              </button>
+              <div className="button-group-compact">
+                <button
+                  onClick={handleSearch}
+                  disabled={loading || !searchTerm.trim()}
+                  className={`search-button-compact ${loading ? 'loading' : ''}`}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-compact"></span>
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <span className="button-icon">🔍</span>
+                      Search
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setResults([]);
+                    setError('');
+                    setHasSearched(false);
+                    setSearchMeta(null);
+                  }}
+                  disabled={loading}
+                  className="icon-button"
+                  title="Clear"
+                >
+                  🔄
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -626,119 +802,190 @@ DST-580066702183793668`}
         </div>
       )}
 
-      {/* Results Section */}
-      {results.length > 0 && (
-        <div className="results-card">
+      {/* Empty State */}
+      {hasSearched && !loading && !error && results.length === 0 && (
+        <div className="empty-state-card">
           <div className="card-header">
-            <div className="header-left">
-              <span className="card-icon">📊</span>
-              <h3>Search Results</h3>
-              <span className="results-count">
-                {filteredResults.length} of {results.length} records
-                {getActiveFilterCount() > 0 && (
-                  <span className="filter-badge">({getActiveFilterCount()} filters active)</span>
-                )}
-              </span>
-            </div>
-            
-                          <div className="header-actions">
-                <button
-                  onClick={() => setActiveFilterDropdown(null)}
-                  className={`filter-toggle-button ${activeFilterDropdown ? 'active' : ''}`}
-                  title="Toggle column filters"
-                >
-                  <span className="button-icon">🔍</span>
-                  Filters {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
-                </button>
-                
-                {getActiveFilterCount() > 0 && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="clear-filters-button"
-                    title="Clear all filters"
-                  >
-                    <span className="button-icon">🗑️</span>
-                    Clear Filters
-                  </button>
-                )}
-                
-                <button
-                  onClick={handleCopyAll}
-                  className="action-button"
-                  title="Copy all data in tab-separated format"
-                >
-                  <span className="button-icon">📋</span>
-                  Copy All ({filteredResults.length})
-                </button>
+            <div className="card-header-left">
+              <span className="card-icon">🛰️</span>
+              <div>
+                <h3>Tidak Ada Data Yang Cocok</h3>
+                <p className="card-subtitle">
+                  Coba beberapa perbaikan di bawah untuk memperluas hasil pencarian.
+                </p>
               </div>
-                      </div>
-            
+            </div>
+          </div>
+          <div className="empty-state-content">
+            <ul>
+              <li>Periksa kembali format EntityID/SystemRefID yang dimasukkan.</li>
+              <li>Gunakan opsi <strong>All Fields</strong> untuk pencarian lintas kolom.</li>
+              <li>Pastikan data sudah ter-refresh di sistem sumber (Oracle / JDA).</li>
+            </ul>
+            <button
+              className="secondary-button ghost"
+              onClick={handleTestConnection}
+              disabled={isTestingConnection}
+            >
+              🔄 Uji koneksi ulang
+            </button>
+          </div>
+        </div>
+      )}
 
-            
-            <div className="table-container">
-              <div className="table-wrapper">
-                <table className="results-table">
-                  <thead>
-                    <tr>
-                      <th className="table-header" onClick={() => toggleFilterDropdown('EntityId')}>
-                        <div className="header-content">
-                          <span className="header-text">EntityID</span>
+      {/* Advanced Filtering Toolbar */}
+      {results.length > 0 && (
+        <div className="table-toolbar">
+          <div className="toolbar-left">
+            <div className="toolbar-group">
+              <span className="toolbar-label">Quick Filters:</span>
+              {searchInsights?.topStatuses?.length ? (
+                <div className="quick-filters-toolbar">
+                  {searchInsights.topStatuses.map((status) => (
+                    <button
+                      key={status.label}
+                      type="button"
+                      className={`filter-chip-toolbar ${isStatusQuickFiltered(status.label) ? 'active' : ''}`}
+                      onClick={() => toggleStatusQuickFilter(status.label)}
+                    >
+                      {status.label} ({status.count})
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="toolbar-empty">No quick filters</span>
+              )}
+            </div>
+          </div>
+          <div className="toolbar-right">
+            <div className="toolbar-group">
+              <button
+                onClick={() => setActiveFilterDropdown(null)}
+                className={`toolbar-button ${activeFilterDropdown ? 'active' : ''}`}
+                title="Column Filters"
+              >
+                🔍 Filters {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
+              </button>
+              {getActiveFilterCount() > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="toolbar-button danger"
+                  title="Clear all filters"
+                >
+                  🗑️ Clear
+                </button>
+              )}
+              <button
+                onClick={handleCopyAll}
+                className="toolbar-button primary"
+                title="Copy all data"
+              >
+                📋 Copy ({sortedAndFilteredResults.length})
+              </button>
+              {searchInsights && (
+                <div className="toolbar-stats">
+                  <span className="stat-item">Total: {searchInsights.total}</span>
+                  <span className="stat-item">Visible: {searchInsights.filtered}</span>
+                  {getActiveFilterCount() > 0 && (
+                    <span className="stat-item filtered">Filters: {getActiveFilterCount()}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Excel-like Table Container */}
+      {results.length > 0 && (
+        <div className="table-focused-container">
+
+          <div className="table-container">
+            <div className="table-wrapper">
+              <table className="results-table">
+                <thead>
+                  <tr>
+                    <th className="table-header excel-header" onClick={() => toggleFilterDropdown('EntityId')}>
+                      <div className="header-content">
+                        <span className="header-text">EntityID</span>
+                        <div className="header-actions-cell">
+                          <button
+                            className={`sort-button ${sortConfig.column === 'EntityId' ? sortConfig.direction : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSort('EntityId');
+                            }}
+                            title="Sort"
+                          >
+                            {sortConfig.column === 'EntityId' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '⇅'}
+                          </button>
                           <span className="header-icon">▼</span>
                         </div>
-                                                {/* Debug: activeFilterDropdown = {activeFilterDropdown} */}
-                        {activeFilterDropdown === 'EntityId' && (
-                          <div className={`filter-dropdown-wrapper ${getDropdownPositionClass('EntityId')}`} style={{border: '3px solid red'}}>
-                            <div style={{padding: '10px', background: 'yellow'}}>DEBUG: Dropdown is visible!</div>
-                            <div className="filter-dropdown" onClick={(e) => e.stopPropagation()}>
-                  <div className="filter-dropdown-header">
-                    <span className="filter-dropdown-icon">🔍</span>
-                                <h4>Filter by EntityID</h4>
-                    <button 
-                      onClick={() => setActiveFilterDropdown(null)}
-                      className="close-filter-dropdown"
-                      title="Close filters"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="filter-dropdown-content">
-                    <div className="filter-checkbox-group">
-                                  <label className="select-all-label">
-                        <input
-                          type="checkbox"
-                                      checked={isAllSelected('EntityId')}
-                                      onChange={(e) => handleSelectAllFilter('EntityId', e.target.checked)}
-                        />
-                                    <span>Select All</span>
-                      </label>
-                      <button
-                                    onClick={() => clearFilter('EntityId')}
-                        className="clear-filter-button"
-                      >
-                        Clear Filter
-                      </button>
-                    </div>
-                    <div className="filter-checkbox-list">
-                                  {getUniqueValues('EntityId').map(value => (
-                        <label key={value} className="filter-checkbox-item">
-                          <input
-                            type="checkbox"
-                                        checked={filters['EntityId']?.includes(value)}
-                                        onChange={(e) => handleFilterChange('EntityId', value, e.target.checked)}
-                          />
-                                      <span className="filter-value">{value}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-                      </th>
-                      <th className="table-header" onClick={() => toggleFilterDropdown('OrigSystemRefId')}>
+                      </div>
+                      {activeFilterDropdown === 'EntityId' && (
+                        <div className={`filter-dropdown-wrapper ${getDropdownPositionClass('EntityId')}`}>
+                          <div className="filter-dropdown" onClick={(e) => e.stopPropagation()}>
+                            <div className="filter-dropdown-header">
+                              <span className="filter-dropdown-icon">🔍</span>
+                              <h4>Filter by EntityID</h4>
+                              <button 
+                                onClick={() => setActiveFilterDropdown(null)}
+                                className="close-filter-dropdown"
+                                title="Close filters"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <div className="filter-dropdown-content">
+                              <div className="filter-checkbox-group">
+                                <label className="select-all-label">
+                                  <input
+                                    type="checkbox"
+                                    checked={isAllSelected('EntityId')}
+                                    onChange={(e) => handleSelectAllFilter('EntityId', e.target.checked)}
+                                  />
+                                  <span>Select All</span>
+                                </label>
+                                <button
+                                  onClick={() => clearFilter('EntityId')}
+                                  className="clear-filter-button"
+                                >
+                                  Clear Filter
+                                </button>
+                              </div>
+                              <div className="filter-checkbox-list">
+                                {getUniqueValues('EntityId').map(value => (
+                                  <label key={value} className="filter-checkbox-item">
+                                    <input
+                                      type="checkbox"
+                                      checked={filters['EntityId']?.includes(value)}
+                                      onChange={(e) => handleFilterChange('EntityId', value, e.target.checked)}
+                                    />
+                                    <span className="filter-value">{value}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </th>
+                      <th className="table-header excel-header" onClick={() => toggleFilterDropdown('OrigSystemRefId')}>
                         <div className="header-content">
                           <span className="header-text">OrigSystemRefID</span>
-                          <span className="header-icon">▼</span>
+                          <div className="header-actions-cell">
+                            <button
+                              className={`sort-button ${sortConfig.column === 'OrigSystemRefId' ? sortConfig.direction : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSort('OrigSystemRefId');
+                              }}
+                              title="Sort"
+                            >
+                              {sortConfig.column === 'OrigSystemRefId' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '⇅'}
+                            </button>
+                            <span className="header-icon">▼</span>
+                          </div>
                         </div>
                         {activeFilterDropdown === 'OrigSystemRefId' && (
                           <div className={`filter-dropdown-wrapper ${getDropdownPositionClass('OrigSystemRefId')}`}>
@@ -788,10 +1035,22 @@ DST-580066702183793668`}
                           </div>
                         )}
                       </th>
-                      <th className="table-header" onClick={() => toggleFilterDropdown('SystemRefId')}>
+                      <th className="table-header excel-header" onClick={() => toggleFilterDropdown('SystemRefId')}>
                         <div className="header-content">
                           <span className="header-text">SystemRefID</span>
-                          <span className="header-icon">▼</span>
+                          <div className="header-actions-cell">
+                            <button
+                              className={`sort-button ${sortConfig.column === 'SystemRefId' ? sortConfig.direction : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSort('SystemRefId');
+                              }}
+                              title="Sort"
+                            >
+                              {sortConfig.column === 'SystemRefId' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '⇅'}
+                            </button>
+                            <span className="header-icon">▼</span>
+                          </div>
                         </div>
                         {activeFilterDropdown === 'SystemRefId' && (
                           <div className={`filter-dropdown-wrapper ${getDropdownPositionClass('SystemRefId')}`}>
@@ -1318,10 +1577,22 @@ DST-580066702183793668`}
                           </div>
                         )}
                       </th>
-                      <th className="table-header" onClick={() => toggleFilterDropdown('Status')}>
+                      <th className="table-header excel-header" onClick={() => toggleFilterDropdown('Status')}>
                         <div className="header-content">
                           <span className="header-text">Status</span>
-                          <span className="header-icon">▼</span>
+                          <div className="header-actions-cell">
+                            <button
+                              className={`sort-button ${sortConfig.column === 'Status' ? sortConfig.direction : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSort('Status');
+                              }}
+                              title="Sort"
+                            >
+                              {sortConfig.column === 'Status' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '⇅'}
+                            </button>
+                            <span className="header-icon">▼</span>
+                          </div>
                         </div>
                         {activeFilterDropdown === 'Status' && (
                           <div className={`filter-dropdown-wrapper ${getDropdownPositionClass('Status')}`}>
@@ -1697,7 +1968,7 @@ DST-580066702183793668`}
                 </tr>
               </thead>
                               <tbody>
-                  {filteredResults.map((row, index) => (
+                  {sortedAndFilteredResults.map((row, index) => (
                       <tr key={index} className={`table-row ${index % 2 === 0 ? 'even-row' : 'odd-row'}`}>
                         <td className="table-cell entity-cell">
                           <div className="cell-content">
@@ -1820,65 +2091,10 @@ DST-580066702183793668`}
                 ))}
               </tbody>
             </table>
-              </div>
+            </div>
           </div>
         </div>
       )}
-
-      {/* Instructions Section */}
-      <div className="instructions-card">
-        <div className="card-header">
-          <span className="card-icon">ℹ️</span>
-          <h3>How to Use</h3>
-        </div>
-        
-        <div className="instructions-content">
-          <div className="instructions-grid">
-            <div className="instruction-section">
-              <h4>Search Process</h4>
-              <ul>
-                <li>1. Select search type (EntityID, SystemRefID, OrigSystemRefID, AWB, or All)</li>
-                <li>2. Choose processing mode: Single (max 100 IDs) or Batch (4000+ IDs)</li>
-                <li>3. Enter search terms - one per line or comma separated</li>
-                <li>4. Click "Search" or press Ctrl+Enter</li>
-              </ul>
-            </div>
-            
-            <div className="instruction-section">
-              <h4>Copy Options</h4>
-              <ul>
-                <li>• "Copy All" - Copy all data in tab-separated format (respects filters)</li>
-                <li>• Row copy - Click the copy icon on any row</li>
-                <li>• Filtered data - Copy functions only copy visible/filtered results</li>
-              </ul>
-            </div>
-            
-                         <div className="instruction-section">
-               <h4>Column Filters</h4>
-               <ul>
-                 <li>• Click on any column header to open filter dropdown</li>
-                 <li>• Use checkboxes to select specific values</li>
-                 <li>• "Select All" to include all values</li>
-                 <li>• "Clear Filter" to remove filter for that column</li>
-                 <li>• Multiple filters work together (AND logic)</li>
-                 <li>• "Clear All Filters" to reset all filters</li>
-               </ul>
-             </div>
-          </div>
-          
-          <div className="divider"></div>
-          
-          <div className="examples-section">
-            <h4>Input Format Examples:</h4>
-            <div className="code-block">
-              BLI12181874766-284<br />
-              BLI12181886055-284<br />
-              BLI12181925864-284<br />
-              <span className="code-note">or: BLI12181874766-284,BLI12181886055-284,BLI12181925864-284</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Snackbar for notifications */}
       {snackbar.open && (
