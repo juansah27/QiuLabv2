@@ -1048,9 +1048,9 @@ const MonitoringOrder = () => {
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.marketplace) params.append('marketplace', filters.marketplace);
       
-      // Reduce timeout to 30 seconds for faster feedback
+      // Timeout 180 detik (3 menit) untuk query kompleks di Ubuntu server
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
+        setTimeout(() => reject(new Error('Request timeout after 180 seconds')), 180000);
       });
       
       // Create the fetch promise with progress indicator and compression

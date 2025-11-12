@@ -32,8 +32,10 @@ def run_production_server():
     app = create_app()
     
     # Jalankan server dengan waitress
+    # channel_timeout: timeout untuk request yang lambat (180 detik = 3 menit)
+    # connection_limit: batas koneksi simultan
     try:
-        serve(app, host=HOST, port=PORT, threads=8)
+        serve(app, host=HOST, port=PORT, threads=8, channel_timeout=180, connection_limit=1000)
     except KeyboardInterrupt:
         print("\nServer stopped")
         sys.exit(0)

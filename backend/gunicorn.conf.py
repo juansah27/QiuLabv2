@@ -9,7 +9,7 @@ backlog = 2048
 workers = multiprocessing.cpu_count() * 2 + 1
 worker_class = "sync"
 worker_connections = 1000
-timeout = 30
+timeout = 180  # Naikkan dari 30 ke 180 detik untuk query yang kompleks
 keepalive = 2
 
 # Server mechanics
