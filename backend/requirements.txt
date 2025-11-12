@@ -7,6 +7,7 @@ flask-login==0.6.3
 Flask-Compress==1.14
 python-dotenv==1.0.0
 Werkzeug==2.3.7
+requests==2.32.3
 
 # Data Processing
 pandas==2.2.3

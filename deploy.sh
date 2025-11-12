@@ -115,10 +115,10 @@ setup_backend() {
   
   # Install dependencies
   print_message "Installing Flask and core dependencies..."
-  pip install Flask==2.3.3 Flask-CORS==4.0.0 Flask-JWT-Extended==4.5.3 python-dotenv==1.0.0 Werkzeug==2.3.7
+  pip install Flask==2.3.3 Flask-CORS==4.0.0 Flask-JWT-Extended==4.5.3 flask-restful==0.3.10 flask-login==0.6.3 Flask-Compress==1.14 python-dotenv==1.0.0 Werkzeug==2.3.7 requests==2.32.3
   
-  print_message "Installing numpy..."
-  pip install numpy==1.26.4
+  print_message "Installing data libraries..."
+  pip install numpy==1.26.4 pandas==2.2.3 openpyxl==3.1.5 eventlet==0.33.3
   
   # Install pyodbc dengan fallback
   print_message "Installing pyodbc (with fallback)..."
