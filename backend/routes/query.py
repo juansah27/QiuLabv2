@@ -2420,6 +2420,7 @@ def get_late_sku_data():
                 so.OrderDate > DATEADD(DAY, -3, GETDATE())
                 AND od.ordnum IS NOT NULL
                 AND ISNULL(lseg.ordqty, 0) <> ISNULL(ol.ordqty, 0)
+                AND so.orderstatus <> 'cancelled'
             """
             
             cursor.execute(query)
@@ -2505,6 +2506,7 @@ def get_invalid_sku_data():
                 so.OrderDate > DATEADD(DAY, -3, GETDATE())
                 AND sku.prtnum IS NULL
                 AND so.FulfilledByFlexo <> '0'
+                AND so.orderstatus <> 'cancelled'
             ORDER BY lseg.PRTNUM
             """
             
