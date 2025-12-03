@@ -350,7 +350,7 @@ const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData
       setTimeout(async () => {
         try {
           // Limit data for clipboard to prevent browser freeze
-          const maxRecords = 5000;
+          const maxRecords = 10000;
           const dataToCopy = data.slice(0, maxRecords);
           
           const csvData = [
@@ -370,7 +370,7 @@ const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData
           console.error('Failed to copy data:', err);
           // Fallback for older browsers
           const textArea = document.createElement('textarea');
-          const maxRecords = 5000;
+          const maxRecords = 10000;
           const dataToCopy = data.slice(0, maxRecords);
           
           const csvData = [
@@ -477,7 +477,7 @@ const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData
                   <span>
                     {copySuccess === 'all' ? 'Copied!' : 
                      copySuccess === 'copying' ? 'Copying...' : 
-                     `Copy All Data${data.length > 5000 ? ` (First 5,000)` : ''}`}
+                     `Copy All Data${data.length > 10000 ? ` (First 10,000)` : ''}`}
                   </span>
                 </button>
               </div>
