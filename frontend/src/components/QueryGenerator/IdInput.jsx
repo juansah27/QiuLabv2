@@ -18,11 +18,19 @@ const IdInput = ({
   ids, 
   yardLoc, 
   marketplace,
+  targetDate,
+  skuLama,
+  skuBaru,
   showYardLoc, 
   showMarketplace,
+  showTargetDate,
+  showSkuReplace,
   onIdsChange, 
   onYardLocChange, 
   onMarketplaceChange,
+  onTargetDateChange,
+  onSkuLamaChange,
+  onSkuBaruChange,
   isCustomInQuery = false 
 }) => {
   return (
@@ -83,6 +91,54 @@ const IdInput = ({
           </Select>
         </div>
       )}
+
+      {showTargetDate && (
+        <div className="space-y-2">
+          <Label htmlFor="target-date">
+            Target Date (Tanggal H-1)
+          </Label>
+          <Input
+            id="target-date"
+            type="date"
+            value={targetDate}
+            onChange={(e) => onTargetDateChange(e.target.value)}
+          />
+          <p className="text-sm text-muted-foreground">
+            Default: kemarin ({new Date(Date.now() - 86400000).toISOString().split('T')[0]})
+          </p>
+        </div>
+      )}
+
+      {showSkuReplace && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="sku-lama">
+              SKU Lama (yang akan diganti)
+            </Label>
+            <Textarea
+              id="sku-lama"
+              rows="3"
+              placeholder="Masukkan SKU lama, pisahkan dengan koma atau newline"
+              value={skuLama}
+              onChange={(e) => onSkuLamaChange(e.target.value)}
+              className="font-mono"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="sku-baru">
+              SKU Baru (pengganti)
+            </Label>
+            <Input
+              id="sku-baru"
+              type="text"
+              placeholder="Masukkan SKU baru (1 SKU saja)"
+              value={skuBaru}
+              onChange={(e) => onSkuBaruChange(e.target.value)}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -91,11 +147,19 @@ IdInput.propTypes = {
   ids: PropTypes.string.isRequired,
   yardLoc: PropTypes.string.isRequired,
   marketplace: PropTypes.string.isRequired,
+  targetDate: PropTypes.string.isRequired,
+  skuLama: PropTypes.string.isRequired,
+  skuBaru: PropTypes.string.isRequired,
   showYardLoc: PropTypes.bool.isRequired,
   showMarketplace: PropTypes.bool.isRequired,
+  showTargetDate: PropTypes.bool.isRequired,
+  showSkuReplace: PropTypes.bool.isRequired,
   onIdsChange: PropTypes.func.isRequired,
   onYardLocChange: PropTypes.func.isRequired,
   onMarketplaceChange: PropTypes.func.isRequired,
+  onTargetDateChange: PropTypes.func.isRequired,
+  onSkuLamaChange: PropTypes.func.isRequired,
+  onSkuBaruChange: PropTypes.func.isRequired,
   isCustomInQuery: PropTypes.bool
 };
 

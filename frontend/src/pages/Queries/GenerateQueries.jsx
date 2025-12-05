@@ -15,10 +15,20 @@ const GenerateQueries = () => {
   // Menambahkan judul halaman
   usePageTitle('Generate Query');
 
+  // Helper function to get yesterday's date in YYYY-MM-DD format
+  const getYesterdayDate = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  };
+
   const [selectedGroup, setSelectedGroup] = useState('query_in_custom');
   const [ids, setIds] = useState('');
   const [yardLoc, setYardLoc] = useState('');
   const [marketplace, setMarketplace] = useState('');
+  const [targetDate, setTargetDate] = useState(getYesterdayDate());
+  const [skuLama, setSkuLama] = useState('');
+  const [skuBaru, setSkuBaru] = useState('');
   const [generatedSql, setGeneratedSql] = useState('');
   const [error, setError] = useState('');
   const [outputFormat, setOutputFormat] = useState('in_clause');
@@ -46,6 +56,21 @@ const GenerateQueries = () => {
   const handleMarketplaceChange = (value) => {
     setMarketplace(value);
     setGeneratedSql(''); // Reset SQL output when marketplace changes
+  };
+
+  const handleTargetDateChange = (value) => {
+    setTargetDate(value);
+    setGeneratedSql(''); // Reset SQL output when target date changes
+  };
+
+  const handleSkuLamaChange = (value) => {
+    setSkuLama(value);
+    setGeneratedSql(''); // Reset SQL output when SKU lama changes
+  };
+
+  const handleSkuBaruChange = (value) => {
+    setSkuBaru(value);
+    setGeneratedSql(''); // Reset SQL output when SKU baru changes
   };
 
   const handleOutputFormatChange = (format) => {
@@ -123,16 +148,23 @@ const GenerateQueries = () => {
       return false;
     }
 
-    // Validasi yard_loc untuk Reopen Door
-    if (selectedGroup === 'reopen_door' && !yardLoc.trim()) {
-      setError('Yard location diperlukan untuk grup Reopen Door');
+
+    // Validasi target date untuk Update DtmCrt dan Entdte
+    if (selectedGroup === 'update_dtmcrt_entdte' && !targetDate.trim()) {
+      setError('Target date diperlukan untuk grup Update DtmCrt dan Entdte');
       return false;
     }
 
-    // Validasi marketplace untuk Sync IsUpdate
-    if (selectedGroup === 'sync_isupdate' && !marketplace.trim()) {
-      setError('Marketplace diperlukan untuk grup Sync IsUpdate');
-      return false;
+    // Validasi SKU untuk Replace SKU
+    if (selectedGroup === 'replace_sku') {
+      if (!skuLama.trim()) {
+        setError('SKU Lama diperlukan untuk grup Replace SKU');
+        return false;
+      }
+      if (!skuBaru.trim()) {
+        setError('SKU Baru diperlukan untuk grup Replace SKU');
+        return false;
+      }
     }
 
     // Validasi nama field untuk WHERE clause
@@ -186,14 +218,22 @@ const GenerateQueries = () => {
         sql = sql.replace(/\{IDS\}/g, idList.map(id => `\'${id}\'`).join(','));
       }
       
-      // Replace yard_loc if needed
-      if (selectedGroup === 'reopen_door' && yardLoc) {
-        sql = sql.replace(/\{YARD_LOC\}/g, yardLoc);
+
+      // Replace target date if needed
+      if (selectedGroup === 'update_dtmcrt_entdte' && targetDate) {
+        sql = sql.replace(/\{TARGET_DATE\}/g, targetDate);
       }
 
-      // Replace marketplace if needed
-      if (selectedGroup === 'sync_isupdate' && marketplace) {
-        sql = sql.replace(/\{MARKETPLACE\}/g, marketplace);
+      // Replace SKU if needed
+      if (selectedGroup === 'replace_sku') {
+        // Process SKU Lama (old SKUs)
+        const skuLamaList = skuLama.split(/[,\n]/).map(sku => processId(sku)).filter(sku => sku);
+        const skuLamaFormatted = skuLamaList.map(sku => `\'${sku}\'`).join(',');
+        sql = sql.replace(/\{SKULAMA\}/g, skuLamaFormatted);
+        
+        // Process SKU Baru (new SKU - single value)
+        const skuBaruProcessed = processId(skuBaru);
+        sql = sql.replace(/\{SKUBARU\}/g, skuBaruProcessed);
       }
       
       setGeneratedSql(sql);
@@ -245,11 +285,19 @@ const GenerateQueries = () => {
                     ids={ids} 
                     yardLoc={yardLoc}
                     marketplace={marketplace}
-                    showYardLoc={selectedGroup === 'reopen_door'}
-                    showMarketplace={selectedGroup === 'sync_isupdate'}
+                    targetDate={targetDate}
+                    skuLama={skuLama}
+                    skuBaru={skuBaru}
+                    showYardLoc={false}
+                    showMarketplace={false}
+                    showTargetDate={selectedGroup === 'update_dtmcrt_entdte'}
+                    showSkuReplace={selectedGroup === 'replace_sku'}
                     onIdsChange={handleIdsChange}
                     onYardLocChange={handleYardLocChange}
                     onMarketplaceChange={handleMarketplaceChange}
+                    onTargetDateChange={handleTargetDateChange}
+                    onSkuLamaChange={handleSkuLamaChange}
+                    onSkuBaruChange={handleSkuBaruChange}
                     isCustomInQuery={selectedGroup === 'query_in_custom'}
                   />
                 </CardContent>

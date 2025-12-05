@@ -7,48 +7,10 @@
 // - {YARD_LOC} akan diganti dengan nilai yard_loc (khusus grup reopen_door)
 
 const QUERY_TEMPLATES = {
-  // Cek SO dan JDA
-  cek_so_jda: `SELECT * FROM Flexo_Db.dbo.SalesOrder
-WHERE SystemRefId IN ({IDS});
-
-SELECT * FROM Flexo_Db.dbo.SalesOrderLine
-WHERE SystemRefId IN ({IDS});
-
-SELECT * FROM flexo_api.dbo.ORDER_LINE_SEG
-WHERE ORDNUM IN ({IDS});`,
-
-  // Cek XML dan New
-  cek_xml_new: `SELECT * FROM SPIDSTGEXML.dbo.ORDER_SEG
-WHERE ORDNUM IN ({IDS});
-
-SELECT * FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
-WHERE ORDNUM IN ({IDS});
-
-SELECT * FROM SPIDSTGJDANew.dbo.ORDER_SEG
-WHERE ORDNUM IN ({IDS});
-
-SELECT * FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG
-WHERE ORDNUM IN ({IDS});`,
-
   // Reopen Door
-  reopen_door: `BEGIN TRANSACTION;
-
-UPDATE dbo.rcvtrk
-SET clsdte = NULL,
-    rcvtrk_stat = 'R'
-WHERE trknum IN ({IDS});
-
-UPDATE dbo.trlr
-SET trlr_stat = 'R',
-    yard_loc = '{YARD_LOC}',
-    close_dte = NULL,
-    dispatch_dte = NULL,
-    yard_loc_wh_id = 'WMD1'
-WHERE trlr_id IN (
-    SELECT trlr_id FROM dbo.rcvtrk WHERE trknum IN ({IDS})
-);
-
-COMMIT TRANSACTION;`,
+  reopen_door: `UPDATE db_wms.receiving
+SET status='inprocess'
+WHERE receiving_number IN ({IDS});`,
 
   // Uncheckin
   uncheckin: `UPDATE SPIDSTGEXML.dbo.ORDER_LINE_SEG
@@ -63,7 +25,8 @@ SET SLOT = NULL
 WHERE ORDNUM IN ({IDS});`,
 
   // Validasi Bundle
-  validasi_bundle: `SELECT 
+  validasi_bundle: `-- 10.6.0.6\\newjda
+SELECT 
     MainSKU AS SKUBundle, 
     BOMSKU AS SKUComponent, 
     BOMQty AS Quantity, 
@@ -76,21 +39,25 @@ WHERE ORDNUM IN ({IDS});`,
     CreatedBy,
     CreatedDate
 FROM Flexo_db_view.dbo.View_Sys_BOM 
-WHERE MainSKU IN ({IDS}) AND EndDate > GETDATE();`,
+WHERE MainSKU IN ({IDS})
+  AND EndDate > GETDATE();
+
+-- CEK SUDAH ADA ORDER BELUM
+SELECT so.PartnerId, so.SystemRefId AS OrderNumber, sol.ItemId AS SKUBundle 
+FROM Flexo_Db.dbo.SalesOrderLine sol
+LEFT JOIN Flexo_Db.dbo.SalesOrder so
+    ON so.SystemRefId = sol.SystemRefId
+WHERE ItemId IN ({IDS});`,
 
   // Validasi Supplementary
   validasi_supplementary: `SELECT ItemID AS MainSKU, Supplementary AS GiftSKU, SupplementaryQty, StartDate, EndDate, marketplace_name AS MarketPlace, shop_name AS Brand, CreatedBy, CreatedAt, id  FROM Flexo_db_view.dbo.View_Supplement where 
-ItemID IN ({IDS}) and EndDate >= DATEADD(MINUTE, DATEDIFF(MINUTE, 0, GETDATE()), 0) order by marketplace_name asc;`,
+ItemID IN ({IDS}) 
+and EndDate >= DATEADD(MINUTE, DATEDIFF(MINUTE, 0, GETDATE()), 0) order by ID asc;`,
 
   // Validasi Gift
   validasi_gift: `select id, ValueStart, ValueEnd, StartDate, EndDate, MainSKU, GiftSKU, GiftQty, LimitSummary AS Limit, ItemLimit AS Limit, marketplace_name AS SalesChannel, shop_name AS Brand, GiftLineNumber, CreatedBy
- from Flexo_db_view.dbo.View_Gift_HL where GiftSKU IN ({IDS}) AND EndDate >= DATEADD(MINUTE, DATEDIFF(MINUTE, 0, GETDATE()), 0);`,
-
-  // Sync IsUpdate
-  sync_isupdate: `UPDATE Flexo_Db.dbo.StockItemTable 
-SET IsUpdate = '1'
-WHERE StockItemName IN ({IDS})
-AND SalesChannel = '{MARKETPLACE}' and IsUpdate = '0';`,
+ from Flexo_db_view.dbo.View_Gift_HL where GiftSKU IN ({IDS}) 
+ AND EndDate >= DATEADD(MINUTE, DATEDIFF(MINUTE, 0, GETDATE()), 0);`,
 
   // Query IN (Custom Only)
   query_in_custom: `IN ({IDS})`,
@@ -109,6 +76,68 @@ AND SalesChannel = '{MARKETPLACE}' and IsUpdate = '0';`,
   DELETE FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG WHERE ORDNUM IN ({IDS});
   DELETE FROM SPIDSTGJDANew.dbo.ORDER_SEG WHERE ORDNUM IN ({IDS});
   `,
+
+  delete_duplikat: `-- 10.6.0.6\\newjda
+WITH Duplikat AS (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY ORDNUM, ORDLIN ORDER BY ENTDTE, ORDLIN) AS rn
+    FROM flexo_api.dbo.ORDER_LINE_SEG
+    WHERE ORDNUM IN ({IDS})
+)
+DELETE FROM Duplikat
+WHERE rn > 1;
+
+-- 10.6.0.6\\jda
+WITH Duplikat AS (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY ORDNUM, ORDLIN ORDER BY ENTDTE, ORDLIN) AS rn
+    FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
+    WHERE ORDNUM IN ({IDS})
+)
+DELETE FROM Duplikat
+WHERE rn > 1;`,
+
+  update_dtmcrt_entdte: `UPDATE SPIDSTGEXML.dbo.ORDER_SEG
+SET
+    ENTDTE = DATEADD(
+                DAY,
+                DATEDIFF(DAY, ENTDTE, '{TARGET_DATE}'),
+                ENTDTE
+             ),
+    STATUS = NULL,
+    TRANSFERDATE = NULL
+WHERE ORDNUM IN ({IDS});
+
+UPDATE Flexo_Db.dbo.SalesOrder
+SET
+    DtmCrt = DATEADD(
+                DAY,
+                DATEDIFF(DAY, DtmCrt, '{TARGET_DATE}'),
+                DtmCrt
+             )
+WHERE SystemRefId IN ({IDS});`,
+
+  replace_sku: `-- 10.6.0.6\\Newjda
+UPDATE Flexo_Db.dbo.SalesOrderLine 
+SET ItemId = '{SKUBARU}'
+WHERE SystemRefId IN ({IDS}) AND ItemId IN ({SKULAMA});
+
+UPDATE WMSPROD.dbo.ord_line 
+SET prtnum = '{SKUBARU}'
+WHERE ordnum IN ({IDS}) AND prtnum IN ({SKULAMA});
+
+UPDATE flexo_api.dbo.ORDER_LINE_SEG 
+SET PRTNUM = '{SKUBARU}'
+WHERE ordnum IN ({IDS}) AND prtnum IN ({SKULAMA});
+
+-- 10.6.0.6\\jda
+UPDATE SPIDSTGEXML.dbo.ORDER_LINE_SEG 
+SET PRTNUM = '{SKUBARU}'
+WHERE ORDNUM IN ({IDS}) AND prtnum IN ({SKULAMA});
+
+UPDATE SPIDSTGJDANew.dbo.ORDER_LINE_SEG 
+SET PRTNUM = '{SKUBARU}'
+WHERE ORDNUM IN ({IDS}) AND prtnum IN ({SKULAMA});`,
 };
 
 /**

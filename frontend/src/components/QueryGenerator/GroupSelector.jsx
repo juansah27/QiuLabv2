@@ -5,16 +5,16 @@ import { Card } from '../ui/card';
 import { cn } from '../../lib/utils';
 
 const QUERY_GROUPS = [
-  { id: 'cek_so_jda', label: 'Cek SO dan JDA' },
-  { id: 'cek_xml_new', label: 'Cek XML dan New' },
-  { id: 'reopen_door', label: 'Reopen Door' },
+  { id: 'reopen_door', label: 'Reopen Door WMS' },
   { id: 'uncheckin', label: 'Uncheckin' },
   { id: 'validasi_bundle', label: 'Validasi Bundle' },
   { id: 'validasi_supplementary', label: 'Validasi Supplementary' },
   { id: 'validasi_gift', label: 'Validasi Gift' },
-  { id: 'sync_isupdate', label: 'Sync IsUpdate' },
   { id: 'query_in_custom', label: 'Query IN (Custom Only)' },
-  { id: 'delete_by_id', label: 'Delete by ID' },
+  { id: 'delete_by_id', label: 'Delete by Systemrefid / Ordnum' },
+  { id: 'delete_duplikat', label: 'Delete Duplikat' },
+  { id: 'update_dtmcrt_entdte', label: 'Update DtmCrt dan Entdte' },
+  { id: 'replace_sku', label: 'Replace SKU' },
 ];
 
 const GroupSelector = ({ selectedGroup, onGroupChange }) => {
