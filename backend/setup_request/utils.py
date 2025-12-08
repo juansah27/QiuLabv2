@@ -45,6 +45,22 @@ def get_client_id(shop_id, db_file=None):
         logging.error(f"Error getting client_id: {str(e)}")
         return None
 
+def load_client_id_mapping_from_db(db_file=None):
+    """Load client ID mapping from database (shop_id -> client_id) - optimized batch loading"""
+    if db_file is None:
+        db_file = get_db_path()
+    
+    try:
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        cursor.execute("SELECT shop_id, client_id FROM shop_mapping")
+        mapping = {row[0]: row[1] for row in cursor.fetchall()}
+        conn.close()
+        return mapping
+    except Exception as e:
+        logging.error(f"Error loading client ID mapping: {str(e)}")
+        return {}
+
 # ====================== [UTILITY FUNCTIONS] ======================
 def assign_shop_id(marketplace, client):
     """Assign shop ID based on marketplace and client"""
@@ -75,6 +91,32 @@ def assign_shop_id(marketplace, client):
         logging.info(f"Assigned ShopId: {shop_id}")
         
     return shop_id
+
+def assign_shop_id_optimized(marketplace, client, shop_id_mapping):
+    """Optimized version of assign_shop_id that uses pre-loaded mapping"""
+    # Ensure marketplace and client are strings
+    if isinstance(marketplace, tuple):
+        marketplace = ' '.join(marketplace).strip()
+    if isinstance(client, tuple):
+        client = ' '.join(client).strip()
+
+    # Handle marketplace aliases
+    marketplace_mapping_dict = {
+        'tokped': 'tokopedia',
+        # Add more mappings if needed
+    }
+    
+    # Convert marketplace to standard form
+    marketplace = marketplace_mapping_dict.get(marketplace.lower().strip(), marketplace.lower().strip())
+
+    key = f"{marketplace}_{client.lower().strip()}"
+    shop_id = shop_id_mapping.get(key, "Unknown")
+    
+    return shop_id
+
+def get_client_id_optimized(shop_id, client_id_mapping):
+    """Optimized version of get_client_id that uses pre-loaded mapping"""
+    return client_id_mapping.get(shop_id, None)
 
 def convert_date_format(date_value, is_end_date=False):
     """Convert date string to standard format"""

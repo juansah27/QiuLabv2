@@ -15,6 +15,9 @@ const QUERY_GROUPS = [
   { id: 'delete_duplikat', label: 'Delete Duplikat' },
   { id: 'update_dtmcrt_entdte', label: 'Update DtmCrt dan Entdte' },
   { id: 'replace_sku', label: 'Replace SKU' },
+  { id: 'template_pero', label: 'Template Pero' },
+  { id: 'query_so_sol', label: 'Query SO & SOL' },
+  { id: 'query_xml_xml_line', label: 'Query XML dan XML Line' },
 ];
 
 const GroupSelector = ({ selectedGroup, onGroupChange }) => {

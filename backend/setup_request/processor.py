@@ -5,8 +5,9 @@ from datetime import datetime, date
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 from .utils import (
-    assign_shop_id, convert_date_format, create_gift_id, 
-    get_client_id, determine_gift_type, get_marketplace_code
+    assign_shop_id, assign_shop_id_optimized, convert_date_format, create_gift_id, 
+    get_client_id, get_client_id_optimized, determine_gift_type, get_marketplace_code,
+    load_shop_id_mapping_from_db, load_client_id_mapping_from_db
 )
 
 class SetupRequestProcessor:
@@ -368,6 +369,12 @@ Ditemukan kolom dengan data kosong yang menyebabkan error pemrosesan.
         """Main process method that handles the file processing"""
         try:
             self.log(f"Memproses file: {os.path.basename(self.file_path)}")
+            
+            # Load mappings once at the start for performance optimization
+            self.log("Memuat mapping dari database...")
+            self.shop_id_mapping = load_shop_id_mapping_from_db()
+            self.client_id_mapping = load_client_id_mapping_from_db()
+            self.log(f"Mapping dimuat: {len(self.shop_id_mapping)} shop mappings, {len(self.client_id_mapping)} client mappings")
             
             with pd.ExcelFile(self.file_path) as xls:
                 all_sheets_data = {}
@@ -977,8 +984,8 @@ Ditemukan kolom dengan data kosong yang menyebabkan error pemrosesan.
             else:
                 raise KeyError("Kolom 'Marketplace' tidak ditemukan setelah pemetaan.")
             
-            # Assign ShopId dan validasi (setelah explode untuk multiple marketplace)
-            df["ShopId"] = df.apply(lambda row: assign_shop_id(row["Marketplace"], row["Client"]), axis=1)
+            # Assign ShopId dan validasi (setelah explode untuk multiple marketplace) - optimized
+            df["ShopId"] = df.apply(lambda row: assign_shop_id_optimized(row["Marketplace"], row["Client"], self.shop_id_mapping), axis=1)
             
             # Validasi ShopId yang menghasilkan "Unknown"
             self.validate_shop_id_mapping(df)
@@ -1149,7 +1156,7 @@ Ditemukan kolom dengan data kosong yang menyebabkan error pemrosesan.
             # Buat DataFrame cms_product_df
             cms_product_df = pd.DataFrame({
                 "product_id": None,
-                "client_id": df["ShopId"].apply(get_client_id),
+                "client_id": df["ShopId"].apply(lambda x: get_client_id_optimized(x, self.client_id_mapping)),
                 "marketplace_id": df["Marketplace"].apply(get_marketplace_id), 
                 "shop_id": df["ShopId"],
                 "product_code": df["SKU Bundle"].astype(str).str.strip().str.replace(r'[\r\n\t]+', '', regex=True),
@@ -1662,8 +1669,8 @@ Ditemukan kolom dengan data kosong yang menyebabkan error pemrosesan.
             df["Start_Date"] = df["Start_Date"].apply(lambda x: convert_date_format(x, False))
             df["End_Date"] = df["End_Date"].apply(lambda x: convert_date_format(x, True))
             
-            # Assign ShopId berdasarkan marketplace dan client
-            df["ShopId"] = df.apply(lambda row: assign_shop_id(row["Marketplace"], row["Client"]), axis=1)
+            # Assign ShopId berdasarkan marketplace dan client - optimized
+            df["ShopId"] = df.apply(lambda row: assign_shop_id_optimized(row["Marketplace"], row["Client"], self.shop_id_mapping), axis=1)
             
             # Validasi ShopId yang menghasilkan "Unknown"
             self.validate_shop_id_mapping(df)
@@ -2011,8 +2018,8 @@ Ditemukan kolom dengan data kosong yang menyebabkan error pemrosesan.
             if 'Limit Qty' in df.columns:
                 df['Limit Qty'] = df['Limit Qty'].replace("No Limit", "NULL")
             
-            # Assign ShopId dengan memperhitungkan Client
-            df["ShopId"] = df.apply(lambda row: assign_shop_id(row["Marketplace"], row["Client"]), axis=1)
+            # Assign ShopId dengan memperhitungkan Client - optimized
+            df["ShopId"] = df.apply(lambda row: assign_shop_id_optimized(row["Marketplace"], row["Client"], self.shop_id_mapping), axis=1)
             
             # Validasi ShopId yang menghasilkan "Unknown"
             self.validate_shop_id_mapping(df)
@@ -2055,7 +2062,7 @@ Ditemukan kolom dengan data kosong yang menyebabkan error pemrosesan.
             header_df = pd.DataFrame({
                 "ID": None,
                 "GIFT ID": df['FORMATTED_GIFT_ID'],  # Langsung gunakan FORMATTED_GIFT_ID
-                "CLIENTID": df['ShopId'].apply(get_client_id),
+                "CLIENTID": df['ShopId'].apply(lambda x: get_client_id_optimized(x, self.client_id_mapping)),
                 "SHOPID": df['ShopId'],
                 "GIFTTYPE": df['Main SKU'].fillna('').apply(determine_gift_type),
                 "STARTDATE": df['Start_Date'],

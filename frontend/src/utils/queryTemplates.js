@@ -138,6 +138,75 @@ WHERE ORDNUM IN ({IDS}) AND prtnum IN ({SKULAMA});
 UPDATE SPIDSTGJDANew.dbo.ORDER_LINE_SEG 
 SET PRTNUM = '{SKUBARU}'
 WHERE ORDNUM IN ({IDS}) AND prtnum IN ({SKULAMA});`,
+
+  // Template Pero
+  template_pero: `SELECT
+    ROW_NUMBER() OVER (ORDER BY SO.SystemRefId) AS [No],
+    SO.OrderDate AS  [Order Date],
+    SO.EntityId AS  [Sales Order],
+    SO.CustName AS  [Customer],
+    SO.DeliveryAddress AS [Alamat],
+    SO.CustPhone1 AS [Telp],
+    '' AS [Kode Pos],
+    SOL.ItemId AS  [Code SKU],
+    SOL.ItemName AS [Deskripsi],
+    SOL.QtyOrder AS  [Quantity],
+    '' AS [Schedule Pickup (date & time)],
+    SO.Awb AS [ AWB],
+    SO.TransporterCode [Transporter],
+    odl.ShipmentDateline AS [SLA Batal],
+    CASE
+        WHEN LXML.prtnum IS NULL OR LXML.prtnum = '' THEN 'Pending'
+        WHEN prt.prtnum IS NULL THEN 'Invalid SKU'
+        WHEN HJDA.adddte IS NOT NULL THEN 'Bisa Diproses'
+        WHEN SO.OrderStatus IS NOT NULL THEN SO.OrderStatus
+        ELSE 'Aman'
+    END AS [Remark]
+FROM Flexo_Db.dbo.SalesOrder SO
+LEFT JOIN Flexo_Db.dbo.Order_Dateline odl 
+    ON SO.EntityId = odl.EntityID
+LEFT JOIN Flexo_Db.dbo.SalesOrderLine SOL 
+    ON SOL.SystemRefId = SO.SystemRefId
+LEFT JOIN [10.6.0.6\jda].SPIDSTGEXML.dbo.ORDER_SEG HXML 
+    ON HXML.ORDNUM = SO.SystemRefId
+LEFT JOIN [10.6.0.6\jda].SPIDSTGEXML.dbo.ORDER_LINE_SEG LXML 
+    ON LXML.ORDNUM = SO.SystemRefId
+LEFT JOIN WMSPROD.dbo.prtmst prt 
+    ON LXML.PRTNUM = prt.prtnum
+LEFT JOIN WMSPROD.dbo.ord HJDA
+    ON SO.SystemRefId = HJDA.ordnum
+    AND HXML.ORDNUM = HJDA.ordnum
+LEFT JOIN WMSPROD.dbo.ord_line LJDA 
+    ON LJDA.ORDNUM = SO.SystemRefId
+    AND LXML.prtnum = LJDA.prtnum
+WHERE SO.SystemRefId IN ({IDS});`,
+
+  // Query SO & SOL
+  query_so_sol: `SELECT SO.SystemId, so.MerchantName, so.SystemRefId, sol.ItemId, sol.ItemName, sol.QtyOrder, so.OrderDate, so.Awb, so.DtmCrt, so.OrderStatus, so.PaymentDate, so.origin, so.FulfilledByFlexo 
+FROM Flexo_Db.dbo.SalesOrder so
+LEFT JOIN Flexo_Db.dbo.SalesOrderLine sol 
+    ON SOL.SystemRefId = SO.SystemRefId
+WHERE So.SystemRefId IN ({IDS});`,
+
+  // Query XML dan XML Line
+  query_xml_xml_line: `SELECT 
+      hxml.ORDNUM,
+      lxml.PRTNUM,
+      lxml.ORDQTY,
+      hxml.ORDTYP,
+      hxml.ENTDTE,
+      hxml.BTCUST,
+      lxml.MANDTE, 
+      lxml.TOT_PLN_PAL_QTY, 
+      lxml.DISTRO_TYP, 
+      lxml.ASSET_TYP,
+      hxml.SLOT,
+      hxml.STATUS,
+      hxml.TRANSFERDATE
+FROM [SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
+LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
+    ON LXML.ORDNUM = hxml.ORDNUM
+WHERE hxml.ordnum IN ({IDS});`,
 };
 
 /**
