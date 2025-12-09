@@ -190,9 +190,14 @@ WHERE So.SystemRefId IN ({IDS});`,
 
   // Query XML dan XML Line
   query_xml_xml_line: `SELECT 
+      '' AS [Client ID],
       hxml.ORDNUM,
       lxml.PRTNUM,
+      lxml.ORDLIN,
+      lxml.ORDSLN,
       lxml.ORDQTY,
+      lxml.INVSTS_PRG,
+      lxml.CANCELLED_FLG,
       hxml.ORDTYP,
       hxml.ENTDTE,
       hxml.BTCUST,
