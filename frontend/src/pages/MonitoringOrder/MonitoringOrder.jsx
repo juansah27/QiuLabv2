@@ -141,9 +141,12 @@ const TableSkeleton = ({ rows = 5, columns = 6 }) => (
 );
 
 // Popup Modal Component
-const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData = false }) => {
+const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = false, isMockData = false }) => {
   const [copySuccess, setCopySuccess] = useState('');
   const [selectedColumn, setSelectedColumn] = useState('');
+  
+  // Use fullData for copying, fallback to data if fullData not provided
+  const dataForCopy = fullData && fullData.length > 0 ? fullData : data;
 
   // Add keyboard event listener for ESC key
   useEffect(() => {
@@ -308,7 +311,7 @@ const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData
 
   const copyColumnData = async (columnName) => {
     try {
-      const columnData = data.map(item => item[columnName]).filter(Boolean);
+      const columnData = dataForCopy.map(item => item[columnName]).filter(Boolean);
       const textToCopy = columnData.join('\n');
       
       await navigator.clipboard.writeText(textToCopy);
@@ -324,7 +327,7 @@ const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData
       console.error('Failed to copy data:', err);
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
-      const columnData = data.map(item => item[columnName]).filter(Boolean);
+      const columnData = dataForCopy.map(item => item[columnName]).filter(Boolean);
       textArea.value = columnData.join('\n');
       document.body.appendChild(textArea);
       textArea.select();
@@ -349,9 +352,9 @@ const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData
       // Use setTimeout to prevent UI freeze for large datasets
       setTimeout(async () => {
         try {
-          // Limit data for clipboard to prevent browser freeze
+          // Limit data for clipboard to prevent browser freeze (use fullData for up to 50k)
           const maxRecords = 50000;
-          const dataToCopy = data.slice(0, maxRecords);
+          const dataToCopy = dataForCopy.slice(0, maxRecords);
           
           const csvData = [
             headers.join('\t'),
@@ -371,7 +374,7 @@ const DetailModal = ({ isOpen, onClose, title, data, loading = false, isMockData
           // Fallback for older browsers
           const textArea = document.createElement('textarea');
           const maxRecords = 50000;
-          const dataToCopy = data.slice(0, maxRecords);
+          const dataToCopy = dataForCopy.slice(0, maxRecords);
           
           const csvData = [
             headers.join('\t'),
@@ -795,7 +798,8 @@ const MonitoringOrder = () => {
   const [modalState, setModalState] = useState({
     isOpen: false,
     title: '',
-    data: [],
+    data: [], // Display data (limited to 10k for UI performance)
+    fullData: [], // Full data (for copying up to 50k)
     loading: false
   });
   
@@ -1229,6 +1233,7 @@ const MonitoringOrder = () => {
       isOpen: true,
       title: 'Loading...',
       data: [],
+      fullData: [],
       loading: true
     });
 
@@ -1282,7 +1287,8 @@ const MonitoringOrder = () => {
         setModalState({
           isOpen: true,
           title: `${title}${modalData.length > 10000 ? ` (Showing first 10,000 of ${modalData.length.toLocaleString()})` : ''}`,
-          data: limitedData,
+          data: limitedData, // For display (10k limit)
+          fullData: modalData, // Full data for copying (up to 50k)
           loading: false
         });
       } catch (error) {
@@ -1291,6 +1297,7 @@ const MonitoringOrder = () => {
           isOpen: true,
           title: 'Error Loading Data',
           data: [],
+          fullData: [],
           loading: false
         });
       }
@@ -1302,6 +1309,7 @@ const MonitoringOrder = () => {
       isOpen: false,
       title: '',
       data: [],
+      fullData: [],
       loading: false
     });
   }, []);
@@ -1837,10 +1845,13 @@ const MonitoringOrder = () => {
             color="red"
             loading={loadingAdditionalData}
             onClick={() => {
+              // Limit display to 10k, but keep full data for copying
+              const limitedLateSku = lateSkuData.slice(0, 10000);
               setModalState({
                 isOpen: true,
-                title: 'SKU Telat Masuk Details',
-                data: lateSkuData,
+                title: `SKU Telat Masuk Details${lateSkuData.length > 10000 ? ` (Showing first 10,000 of ${lateSkuData.length.toLocaleString()})` : ''}`,
+                data: limitedLateSku,
+                fullData: lateSkuData,
                 loading: false
               });
             }}
@@ -1854,10 +1865,13 @@ const MonitoringOrder = () => {
             color="orange"
             loading={loadingAdditionalData}
             onClick={() => {
+              // Limit display to 10k, but keep full data for copying
+              const limitedInvalidSku = invalidSkuData.slice(0, 10000);
               setModalState({
                 isOpen: true,
-                title: 'Invalid SKU Details',
-                data: invalidSkuData,
+                title: `Invalid SKU Details${invalidSkuData.length > 10000 ? ` (Showing first 10,000 of ${invalidSkuData.length.toLocaleString()})` : ''}`,
+                data: limitedInvalidSku,
+                fullData: invalidSkuData,
                 loading: false
               });
             }}
@@ -1871,10 +1885,13 @@ const MonitoringOrder = () => {
             color="purple"
             loading={loadingAdditionalData}
             onClick={() => {
+              // Limit display to 10k, but keep full data for copying
+              const limitedDuplicate = duplicateOrderData.slice(0, 10000);
               setModalState({
                 isOpen: true,
-                title: 'Order Duplikat Details',
-                data: duplicateOrderData,
+                title: `Order Duplikat Details${duplicateOrderData.length > 10000 ? ` (Showing first 10,000 of ${duplicateOrderData.length.toLocaleString()})` : ''}`,
+                data: limitedDuplicate,
+                fullData: duplicateOrderData,
                 loading: false
               });
             }}
@@ -2030,6 +2047,7 @@ const MonitoringOrder = () => {
           onClose={closeModal}
           title={modalState.title}
           data={modalState.data}
+          fullData={modalState.fullData}
           loading={modalState.loading}
           isMockData={dataSource === 'mock'}
         />
