@@ -730,10 +730,12 @@ const FilterSection = ({ filters, setFilters, brands, marketplaces, loading }) =
 };
 
 const MonitoringOrder = () => {
-  const [loading, setLoading] = useState(true);
+  const [loadingCards, setLoadingCards] = useState(true);
+  const [loadingCharts, setLoadingCharts] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
   const [error, setError] = useState(null);
   const [rawData, setRawData] = useState([]);
+  const [cardsData, setCardsData] = useState([]); // Minimal data for cards only
 
   const [chartKey, setChartKey] = useState(0);
   const [brandsView, setBrandsView] = useState('chart');
@@ -848,10 +850,12 @@ const MonitoringOrder = () => {
   usePageTitle(pageTitle);
 
   // Apply filters with useMemo for better performance
+  // Use cardsData for cards, rawData for charts
   const filteredDataMemo = useMemo(() => {
-    if (!rawData.length) return [];
+    const dataSource = rawData.length > 0 ? rawData : cardsData;
+    if (!dataSource.length) return [];
 
-    let filtered = [...rawData];
+    let filtered = [...dataSource];
 
     // Filter by date range
     if (filters.startDate && filters.endDate) {
@@ -879,7 +883,7 @@ const MonitoringOrder = () => {
 
 
     return filtered;
-  }, [rawData, filters]);
+  }, [rawData, cardsData, filters]);
 
   // Optimized data processing with useMemo - using filtered data
   const processedData = useMemo(() => {
@@ -1029,21 +1033,24 @@ const MonitoringOrder = () => {
   // Update data state when processed data changes
   useEffect(() => {
     setData(processedData); // Use the same processed data for everything
-    setChartKey(prev => prev + 1);
-  }, [processedData]);
+    // Only update chart key when charts data is loaded (not just cards)
+    if (!loadingCharts && rawData.length > 0) {
+      setChartKey(prev => prev + 1);
+    }
+  }, [processedData, loadingCharts, rawData.length]);
 
-  const fetchData = useCallback(async () => {
+  // Fetch minimal data for cards first (fast loading)
+  const fetchCardsData = useCallback(async () => {
     try {
-      setLoading(true);
-      setIsFiltering(true);
+      setLoadingCards(true);
       setError(null);
       const token = localStorage.getItem('token');
       
-      // Build query parameters with optimized pagination for dashboard
+      // Build query parameters - minimal data for cards only
       const params = new URLSearchParams({
         page: '1',
-        per_page: '100000', // 100k records per page for better performance
-        limit: '1000000'    // Max 1M records total for dashboard
+        per_page: '50000', // Reduced for faster cards loading
+        limit: '50000'    // Limit for cards
       });
       
       // Add filters if they exist
@@ -1052,12 +1059,11 @@ const MonitoringOrder = () => {
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.marketplace) params.append('marketplace', filters.marketplace);
       
-      // Timeout 180 detik (3 menit) untuk query kompleks di Ubuntu server
+      // Timeout 60 seconds for cards (faster)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 180 seconds')), 180000);
+        setTimeout(() => reject(new Error('Request timeout after 60 seconds')), 60000);
       });
       
-      // Create the fetch promise with progress indicator and compression
       const fetchPromise = fetch(`/api/query/monitoring-order?${params.toString()}`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -1065,7 +1071,74 @@ const MonitoringOrder = () => {
         }
       });
 
-      // Race between fetch and timeout
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data) {
+        setCardsData(result.data);
+        // Set data source based on API response
+        const source = result.data_source === 'sql_server' ? 'sql' : 'mock';
+        setDataSource(source);
+        setError(null);
+        
+        console.log(`Cards data loaded: ${result.data.length} records`);
+      } else {
+        throw new Error(result.error || 'Failed to fetch cards data');
+      }
+    } catch (err) {
+      console.error('Error fetching cards:', err);
+      
+      if (err.message.includes('401') || err.message.includes('403')) {
+        setError('Authentication failed. Please login again.');
+        return;
+      }
+      
+      // Fallback to mock data for cards
+      const mockData = [
+        { 'MARKETPLACE': 'SHOPEE', 'Brand': 'FACETOLOGY', 'SystemRefId': 'MOCK001', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T10:30:00' },
+        { 'MARKETPLACE': 'LAZADA', 'Brand': 'SOMEBYMI', 'SystemRefId': 'MOCK002', 'ORDER STATUS': 'PENDING VERIFIKASI', 'Status_Interfaced': 'No', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T11:15:00' },
+      ];
+      setCardsData(mockData);
+      setDataSource('mock');
+    } finally {
+      setLoadingCards(false);
+    }
+  }, [filters]);
+
+  // Fetch full data for charts (after cards are loaded)
+  const fetchChartsData = useCallback(async () => {
+    try {
+      setLoadingCharts(true);
+      const token = localStorage.getItem('token');
+      
+      // Build query parameters with full data for charts
+      const params = new URLSearchParams({
+        page: '1',
+        per_page: '100000', // Full data for charts
+        limit: '1000000'    // Max 1M records total
+      });
+      
+      // Add filters if they exist
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.brand) params.append('brand', filters.brand);
+      if (filters.marketplace) params.append('marketplace', filters.marketplace);
+      
+      // Timeout 180 seconds for full data
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout after 180 seconds')), 180000);
+      });
+      
+      const fetchPromise = fetch(`/api/query/monitoring-order?${params.toString()}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Accept-Encoding': 'gzip, deflate, br'
+        }
+      });
+
       const response = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -1074,147 +1147,98 @@ const MonitoringOrder = () => {
       
       if (result.status === 'success' && result.data) {
         setRawData(result.data);
-        // Set data source based on API response
-        const source = result.data_source === 'sql_server' ? 'sql' : 'mock';
-        setDataSource(source);
         
         // Log performance info if available
         if (result.performance) {
-          console.log('API Performance:', result.performance);
+          console.log('Charts API Performance:', result.performance);
         }
         
-        // Log pagination info if available
-        if (result.pagination) {
-          console.log('Pagination Info:', result.pagination);
-        }
-        
-        // Log data info
-        console.log(`Received ${result.data.length} records from API`);
+        console.log(`Charts data loaded: ${result.data.length} records`);
         if (result.data.length > 0) {
           console.log('Sample data:', result.data[0]);
-          console.log('Data fields:', Object.keys(result.data[0]));
         }
-  
-        // Clear any previous mock data indicator
-        setError(null);
       } else {
-        throw new Error(result.error || 'Failed to fetch data');
+        throw new Error(result.error || 'Failed to fetch charts data');
       }
     } catch (err) {
-      console.error('Error:', err);
-      
-      // Check if it's an authentication error
-      if (err.message.includes('401') || err.message.includes('403')) {
-        setError('Authentication failed. Please login again.');
-        // Redirect to login or refresh token
-        return;
-      }
-      
-      // Check if it's a timeout error
-      if (err.message.includes('timeout')) {
-        setError('Database query timeout (>30s). Showing mock data for demonstration.');
-      } else {
-        setError(`Database connection failed: ${err.message}. Showing mock data.`);
-      }
-      
-      // Fallback to mock data with more variety
-      const mockData = [
-        { 'MARKETPLACE': 'SHOPEE', 'Brand': 'FACETOLOGY', 'SystemRefId': 'MOCK001', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T10:30:00' },
-        { 'MARKETPLACE': 'LAZADA', 'Brand': 'SOMEBYMI', 'SystemRefId': 'MOCK002', 'ORDER STATUS': 'PENDING VERIFIKASI', 'Status_Interfaced': 'No', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T11:15:00' },
-        { 'MARKETPLACE': 'SHOPEE', 'Brand': 'FACETOLOGY', 'SystemRefId': 'MOCK003', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T12:30:00' },
-        { 'MARKETPLACE': 'TOKOPEDIA', 'Brand': 'SOMEBYMI', 'SystemRefId': 'MOCK004', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'No', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T13:15:00' },
-        { 'MARKETPLACE': 'LAZADA', 'Brand': 'FACETOLOGY', 'SystemRefId': 'MOCK005', 'ORDER STATUS': 'PENDING VERIFIKASI', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T14:30:00' },
-        { 'MARKETPLACE': 'SHOPEE', 'Brand': 'BRAND_A', 'SystemRefId': 'MOCK006', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T15:30:00' },
-        { 'MARKETPLACE': 'LAZADA', 'Brand': 'BRAND_B', 'SystemRefId': 'MOCK007', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'No', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T16:15:00' },
-        { 'MARKETPLACE': 'TOKOPEDIA', 'Brand': 'BRAND_C', 'SystemRefId': 'MOCK008', 'ORDER STATUS': 'PENDING VERIFIKASI', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T17:30:00' },
-        { 'MARKETPLACE': 'SHOPEE', 'Brand': 'BRAND_D', 'SystemRefId': 'MOCK009', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'No', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T18:15:00' },
-        { 'MARKETPLACE': 'LAZADA', 'Brand': 'BRAND_E', 'SystemRefId': 'MOCK010', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T19:30:00' },
-        // Add more data to ensure bars appear
-        { 'MARKETPLACE': 'SHOPEE', 'Brand': 'FACETOLOGY', 'SystemRefId': 'MOCK011', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T20:30:00' },
-        { 'MARKETPLACE': 'LAZADA', 'Brand': 'SOMEBYMI', 'SystemRefId': 'MOCK012', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'No', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T21:15:00' },
-        { 'MARKETPLACE': 'TOKOPEDIA', 'Brand': 'BRAND_A', 'SystemRefId': 'MOCK013', 'ORDER STATUS': 'PENDING VERIFIKASI', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T22:30:00' },
-        { 'MARKETPLACE': 'SHOPEE', 'Brand': 'BRAND_B', 'SystemRefId': 'MOCK014', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'No', 'Status_Durasi': 'Kurang Dari 1 jam', 'OrderDate': '2024-01-16T23:15:00' },
-        { 'MARKETPLACE': 'LAZADA', 'Brand': 'BRAND_C', 'SystemRefId': 'MOCK015', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-17T00:30:00' }
-      ];
-      setRawData(mockData);
-      setDataSource('mock'); // Mark as mock data
-
+      console.error('Error fetching charts:', err);
+      // Don't set error for charts, just log it
     } finally {
-      setLoading(false);
-      setIsFiltering(false);
+      setLoadingCharts(false);
     }
   }, [filters]);
 
-  // Function to fetch additional data for the 3 new grids
+  // Function to fetch additional data for the 3 new grids - PARALLEL FETCHING
   const fetchAdditionalData = useCallback(async () => {
     try {
       setLoadingAdditionalData(true);
       const token = localStorage.getItem('token');
       
-      // Fetch Late SKU Data
-      try {
-        const lateSkuResponse = await fetch('/api/query/late-sku', {
+      // Parallel fetching for all 3 endpoints
+      const [lateSkuResponse, invalidSkuResponse, duplicateOrderResponse] = await Promise.allSettled([
+        fetch('/api/query/late-sku', {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Accept-Encoding': 'gzip, deflate, br'
           }
-        });
-        
-                 if (lateSkuResponse.ok) {
-           const lateSkuResult = await lateSkuResponse.json();
-           if (lateSkuResult.status === 'success') {
-             setLateSkuData(lateSkuResult.data || []);
-             setAdditionalDataSources(prev => ({ ...prev, lateSku: lateSkuResult.data_source || 'sql' }));
-           }
-         } else {
-           console.warn('Late SKU API returned:', lateSkuResponse.status);
-         }
-      } catch (err) {
-        console.warn('Error fetching late SKU data:', err);
+        }),
+        fetch('/api/query/invalid-sku', {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept-Encoding': 'gzip, deflate, br'
+          }
+        }),
+        fetch('/api/query/duplicate-orders', {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept-Encoding': 'gzip, deflate, br'
+          }
+        })
+      ]);
+      
+      // Process Late SKU response
+      if (lateSkuResponse.status === 'fulfilled' && lateSkuResponse.value.ok) {
+        try {
+          const lateSkuResult = await lateSkuResponse.value.json();
+          if (lateSkuResult.status === 'success') {
+            setLateSkuData(lateSkuResult.data || []);
+            setAdditionalDataSources(prev => ({ ...prev, lateSku: lateSkuResult.data_source || 'sql' }));
+          }
+        } catch (err) {
+          console.warn('Error parsing late SKU data:', err);
+        }
+      } else {
+        console.warn('Late SKU API failed:', lateSkuResponse.status);
       }
       
-      // Fetch Invalid SKU Data
-      try {
-        const invalidSkuResponse = await fetch('/api/query/invalid-sku', {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Accept-Encoding': 'gzip, deflate, br'
+      // Process Invalid SKU response
+      if (invalidSkuResponse.status === 'fulfilled' && invalidSkuResponse.value.ok) {
+        try {
+          const invalidSkuResult = await invalidSkuResponse.value.json();
+          if (invalidSkuResult.status === 'success') {
+            setInvalidSkuData(invalidSkuResult.data || []);
+            setAdditionalDataSources(prev => ({ ...prev, invalidSku: invalidSkuResult.data_source || 'sql' }));
           }
-        });
-        
-                 if (invalidSkuResponse.ok) {
-           const invalidSkuResult = await invalidSkuResponse.json();
-           if (invalidSkuResult.status === 'success') {
-             setInvalidSkuData(invalidSkuResult.data || []);
-             setAdditionalDataSources(prev => ({ ...prev, invalidSku: invalidSkuResult.data_source || 'sql' }));
-           }
-         } else {
-           console.warn('Invalid SKU API returned:', invalidSkuResponse.status);
-         }
-      } catch (err) {
-        console.warn('Error fetching invalid SKU data:', err);
+        } catch (err) {
+          console.warn('Error parsing invalid SKU data:', err);
+        }
+      } else {
+        console.warn('Invalid SKU API failed:', invalidSkuResponse.status);
       }
       
-      // Fetch Duplicate Order Data
-      try {
-        const duplicateOrderResponse = await fetch('/api/query/duplicate-orders', {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Accept-Encoding': 'gzip, deflate, br'
+      // Process Duplicate Orders response
+      if (duplicateOrderResponse.status === 'fulfilled' && duplicateOrderResponse.value.ok) {
+        try {
+          const duplicateOrderResult = await duplicateOrderResponse.value.json();
+          if (duplicateOrderResult.status === 'success') {
+            setDuplicateOrderData(duplicateOrderResult.data || []);
+            setAdditionalDataSources(prev => ({ ...prev, duplicateOrders: duplicateOrderResult.data_source || 'sql' }));
           }
-        });
-        
-                 if (duplicateOrderResponse.ok) {
-           const duplicateOrderResult = await duplicateOrderResponse.json();
-           if (duplicateOrderResult.status === 'success') {
-             setDuplicateOrderData(duplicateOrderResult.data || []);
-             setAdditionalDataSources(prev => ({ ...prev, duplicateOrders: duplicateOrderResult.data_source || 'sql' }));
-           }
-         } else {
-           console.warn('Duplicate Orders API returned:', duplicateOrderResponse.status);
-         }
-      } catch (err) {
-        console.warn('Error fetching duplicate orders data:', err);
+        } catch (err) {
+          console.warn('Error parsing duplicate orders data:', err);
+        }
+      } else {
+        console.warn('Duplicate Orders API failed:', duplicateOrderResponse.status);
       }
       
     } catch (err) {
@@ -1314,34 +1338,21 @@ const MonitoringOrder = () => {
     });
   }, []);
 
+  // Lazy loading: Load cards first, then charts
   useEffect(() => {
-    fetchData();
-    fetchAdditionalData();
-  }, [fetchData, fetchAdditionalData]);
+    // Step 1: Fetch cards data first (fast)
+    fetchCardsData().then(() => {
+      // Step 2: After cards loaded, fetch charts data and additional data in parallel
+      Promise.all([
+        fetchChartsData(),
+        fetchAdditionalData()
+      ]).catch(err => {
+        console.error('Error loading charts or additional data:', err);
+      });
+    });
+  }, [fetchCardsData, fetchChartsData, fetchAdditionalData]);
 
-  if (loading && rawData.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Loading Dashboard</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">Fetching data from database...</p>
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-                This may take a few seconds for large datasets
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // No full page loading - render page immediately with loading states in cards
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -1392,13 +1403,20 @@ const MonitoringOrder = () => {
                 };
                 
                 setFilters(updatedFilters);
-                fetchData();
-                fetchAdditionalData();
+                // Refresh with lazy loading: cards first, then charts
+                fetchCardsData().then(() => {
+                  Promise.all([
+                    fetchChartsData(),
+                    fetchAdditionalData()
+                  ]).catch(err => {
+                    console.error('Error refreshing charts or additional data:', err);
+                  });
+                });
               }}
-              disabled={loading || loadingAdditionalData}
+              disabled={loadingCards || loadingCharts || loadingAdditionalData}
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-colors"
             >
-              <ArrowPathIcon className={`w-4 h-4 ${(loading || loadingAdditionalData) ? 'animate-spin' : ''}`} />
+              <ArrowPathIcon className={`w-4 h-4 ${(loadingCards || loadingCharts || loadingAdditionalData) ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
           </div>
@@ -1421,60 +1439,70 @@ const MonitoringOrder = () => {
           setFilters={setFilters} 
           brands={data.brands} 
           marketplaces={data.marketplaces}
-          loading={loading}
+          loading={loadingCards}
         />
 
-                  {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-                <StatCard 
-                  title="Total Orders" 
-                  value={data.cards.totalOrder} 
-                  icon={ChartBarIcon} 
-                  color="blue" 
-                  loading={loading}
-                  onClick={() => handleCardClick('totalOrder')}
-                />
-                <StatCard 
-                  title="Interfaced" 
-                  value={data.cards.totalOrderInterface} 
-                  icon={CheckCircleIcon} 
-                  color="green" 
-                  loading={loading}
-                  onClick={() => handleCardClick('totalOrderInterface')}
-                />
-                <StatCard 
-                  title="Not Interfaced" 
-                  value={data.cards.totalOrderNotYetInterface} 
-                  icon={XCircleIcon} 
-                  color="red" 
-                  loading={loading}
-                  onClick={() => handleCardClick('totalOrderNotYetInterface')}
-                />
-                <StatCard 
-                  title="Pending Verification" 
-                  value={data.cards.totalOrderPendingVerifikasi} 
-                  icon={ClockIcon} 
-                  color="yellow" 
-                  loading={loading}
-                  onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
-                />
-                <StatCard 
-                  title=" > 1 Hour" 
-                  value={data.cards.totalOrderLebihDari1Jam} 
-                  icon={ArrowTrendingUpIcon} 
-                  color="orange" 
-                  loading={loading}
-                  onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
-                />
-                <StatCard 
-                  title=" < 1 Hour" 
-                  value={data.cards.totalOrderKurangDari1Jam} 
-                  icon={ArrowTrendingDownIcon} 
-                  color="purple" 
-                  loading={loading}
-                  onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
-                />
+        {/* Stats Cards - Load first with cardsData */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+          <StatCard 
+            title="Total Orders" 
+            value={data.cards.totalOrder} 
+            icon={ChartBarIcon} 
+            color="blue" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrder')}
+          />
+          <StatCard 
+            title="Interfaced" 
+            value={data.cards.totalOrderInterface} 
+            icon={CheckCircleIcon} 
+            color="green" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderInterface')}
+          />
+          <StatCard 
+            title="Not Interfaced" 
+            value={data.cards.totalOrderNotYetInterface} 
+            icon={XCircleIcon} 
+            color="red" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderNotYetInterface')}
+          />
+          <StatCard 
+            title="Pending Verification" 
+            value={data.cards.totalOrderPendingVerifikasi} 
+            icon={ClockIcon} 
+            color="yellow" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
+          />
+          <StatCard 
+            title=" > 1 Hour" 
+            value={data.cards.totalOrderLebihDari1Jam} 
+            icon={ArrowTrendingUpIcon} 
+            color="orange" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
+          />
+          <StatCard 
+            title=" < 1 Hour" 
+            value={data.cards.totalOrderKurangDari1Jam} 
+            icon={ArrowTrendingDownIcon} 
+            color="purple" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
+          />
+        </div>
+
+        {/* Charts Loading Indicator */}
+        {loadingCharts && (
+          <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <span className="text-sm text-blue-800 dark:text-blue-200">Loading charts data...</span>
+            </div>
           </div>
+        )}
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-6">
@@ -1537,11 +1565,11 @@ const MonitoringOrder = () => {
             {/* Brands Chart View */}
             {brandsView === 'chart' && (
               <div className="h-[500px]">
-                {loading ? (
+                {loadingCharts ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading chart...</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
                     </div>
                   </div>
                 ) : data.top20Data && data.top20Data.length > 0 ? (
@@ -1952,7 +1980,14 @@ const MonitoringOrder = () => {
 
             {/* Chart */}
             <div className="h-[400px]">
-              {data.orderEvolution.length > 0 ? (
+              {loadingCharts ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
+                  </div>
+                </div>
+              ) : data.orderEvolution.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart 
                     data={data.orderEvolution} 

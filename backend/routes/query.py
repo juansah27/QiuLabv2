@@ -1804,97 +1804,172 @@ def get_monitoring_order_data_internal():
             
             # Execute the optimized monitoring order query with pagination
             monitoring_order_query = f"""
-            WITH SalesOrderCTE AS (
-                SELECT DISTINCT
-                    CASE 
-                        WHEN so.SystemId = 'MPUP' THEN 'UPLOAD'
-                        WHEN so.SystemId = 'GCOOP' THEN 'UPLOAD'
-                        WHEN so.SystemId = 'MPBI' THEN 'BLIBLI'
-                        WHEN so.SystemId = 'JUBELIO' THEN 'JUBELIO'
-                        WHEN so.SystemId = 'MPDS' THEN 'DESTY'
-                        WHEN so.SystemId = 'MPGN' THEN 'GINEE'
-                        WHEN so.SystemId = 'CMS' THEN 'UPLOAD'
-                        WHEN so.SystemId = 'MPLZ' THEN 'LAZADA'
-                        WHEN so.SystemId = 'MPSH' THEN 'SHOPEE'
-                        WHEN so.SystemId = 'GMS' THEN 'UPLOAD'
-                        WHEN so.SystemId = 'GDTECH' THEN 'UPLOAD'
-                        WHEN so.SystemId = 'MPTS' THEN 'TIKTOK'
-                        WHEN so.SystemId = 'SHPY' THEN 'SHOPIFY'
-                        WHEN so.SystemId = 'MPZR' THEN 'ZALORA'
-                        ELSE so.SystemId
-                    END AS MARKETPLACE,
-                    CASE 
-                        WHEN so.MerchantName = 'FACETOLOGY' THEN 'FACETOLOGY'
-                        WHEN so.MerchantName = 'SOMEBYMI' THEN 'SOMEBYMI'
-                        WHEN so.MerchantName = 'KIVA' THEN 'KIVA'
-                        WHEN so.MerchantName = 'SCORA' THEN 'SCORA'
-                        WHEN so.MerchantName = 'SOMBONG' THEN 'SOMBONG'
-                        WHEN so.MerchantName = 'ESQA' THEN 'ESQA'
-                        WHEN so.MerchantName = 'AMAN MAJU NUSANTARA' THEN 'AMAN MAJU NUSANTARA'
-                        WHEN so.MerchantName = 'NACIFIC' THEN 'NACIFIC'
-                        WHEN so.MerchantName = 'CETAPHIL' THEN 'CETAPHIL'
-                        WHEN so.MerchantName = 'ELVICTO' THEN 'ELVICTO'
-                        WHEN so.MerchantName = 'LUXCRIME' THEN 'LUXCRIME'
-                        WHEN so.MerchantName = 'LUXCRIME_ID' THEN 'LUXCRIME'
-                        WHEN so.MerchantName = 'SKIN GAME' THEN 'SKIN GAME'
-                        WHEN so.MerchantName = 'HISTOIRE' THEN 'HISTOIRE'
-                        WHEN so.MerchantName = 'MOTHER OF PEARL' THEN 'MOTHER OF PEARL'
-                        WHEN so.MerchantName = 'INNISFREE' THEN 'INNISFREE'
-                        WHEN so.MerchantName = 'MUSTELA' THEN 'MUSTELA'
-                        WHEN so.MerchantName = 'TAG' THEN 'TAG'
-                        WHEN so.MerchantName = 'REEDERMA' THEN 'REEDERMA'
-                        WHEN so.MerchantName = 'NIUZ' THEN 'NIUZ'
-                        WHEN so.MerchantName = 'SUNTORY' THEN 'SUNTORY'
-                        WHEN so.MerchantName = 'KAYARU' THEN 'KAYARU'
-                        WHEN so.MerchantName = 'MOLAGI' THEN 'MOLAGI'
-                        WHEN so.MerchantName = 'ATOPALM' THEN 'ATOPALM'
-                        WHEN so.MerchantName = 'EUNYUL' THEN 'EUNYUL'
-                        WHEN so.MerchantName = 'DEARDOER' THEN 'DEARDOER'
-                        WHEN so.MerchantName = 'ISELECT' THEN 'ISELECT'
-                        WHEN so.MerchantName = 'FILMORE' THEN 'FILMORE'
-                        WHEN so.MerchantName = 'KYND' THEN 'KYND'
-                        WHEN so.MerchantName = 'DENISE CHARISTA' THEN 'DENISE CHARISTA'
-                        WHEN so.MerchantName = 'SOLARTECH' THEN 'SOLARTECH'
-                        WHEN so.MerchantName = 'TENTANG ANAK' THEN 'TENTANG ANAK'
-                        WHEN so.MerchantName = 'GREECHEF' THEN 'GREECHEF'
-                        WHEN so.MerchantName IS NULL THEN 'UNDEFINED'
-                        ELSE so.MerchantName
-                    END AS Brand,
-                    so.SystemRefId,
-                    so.OrderDate,
-                    CASE 
-                        WHEN so.SystemId = 'MPSH' 
-                            AND so.OrderedById = 'LOGISTICS_NOT_START' 
-                            AND so.OrderStatus = 'READY_TO_SHIP' 
-                        THEN 'PENDING VERIFIKASI'
-                        ELSE so.OrderStatus 
-                    END AS [ORDER STATUS],
-                    so.Awb,                
-                    CASE 
-                        WHEN EXISTS (
-                            SELECT 1 
-                            FROM WMSPROD.dbo.ord_line ol WITH (NOLOCK)
-                            WHERE ol.ordnum = so.SystemRefId
-                        ) THEN 'Yes'
-                        ELSE 'No'
-                    END AS [Status_Interfaced],
-                    CASE 
-                        WHEN DATEDIFF(MINUTE, so.OrderDate, GETDATE()) > 59 THEN 'Lebih Dari 1 jam'
-                        ELSE 'Kurang Dari 1 jam'
-                    END AS [Status_Durasi],
-                    so.FulfilledByFlexo
-                FROM 
-                    Flexo_Db.dbo.SalesOrder AS so WITH (NOLOCK)
-                LEFT JOIN 
-                    WMSPROD.dbo.ord_line AS ord WITH (NOLOCK)
-                    ON so.SystemRefId = ord.ordnum
-                WHERE 
-                    {where_clause}
-                    AND so.FulfilledByFlexo <> '0'
-            )
-            SELECT *
-            FROM SalesOrderCTE
-            ORDER BY OrderDate DESC
+            SELECT
+                CASE 
+                    WHEN so.SystemId ='MPSH' THEN 'Shopee'
+                    WHEN so.SystemId ='MSTP' THEN 'Tokopedia'
+                    WHEN so.SystemId = 'GCOOP' THEN 'GCOOP'
+                    WHEN so.SystemId = 'Jubelio' THEN 'Jubelio'
+                    WHEN so.SystemId = 'MPJD' THEN 'JD.ID'
+                    WHEN so.SystemId = 'MPLZ' THEN 'Lazada'
+                    WHEN so.SystemId = 'Other' THEN 'Other'
+                    WHEN so.SystemId = 'SS' THEN 'Sistersel'
+                    WHEN so.SystemId = 'MPBI' THEN 'Blibli'
+                    WHEN so.SystemId = 'GDTech' THEN 'GDTech'
+                    WHEN so.SystemId = 'MPTS' THEN 'Tiktok'
+                    WHEN so.SystemId = 'SHPY' THEN 'Shopify'
+                    WHEN so.SystemId = 'MPZR' THEN 'ZALORA'
+                    WHEN so.SystemId = 'MPUP' THEN 'CMS FLEXO'
+                    WHEN so.SystemId = 'MPGN' THEN 'GINEE'
+                    WHEN so.SystemId = 'MPDS' THEN 'DESTY'
+                    ELSE 'New Channel'
+                END AS MARKETPLACE,
+                CASE 
+                    WHEN so.MerchantName = 'FACETOLOGY' THEN 'FACETOLOGY'
+                    WHEN so.MerchantName = 'OSF' THEN 'OSF'
+                    WHEN so.MerchantName = 'SOMEBYMI' THEN 'SOMEBYMI'
+                    WHEN so.MerchantName = 'KIVA' THEN 'KIVA'
+                    WHEN so.MerchantName = 'EBLO-INTERBAT' THEN 'INTERBAT'
+                    WHEN so.MerchantName = 'FILMORE' THEN 'FILMORE'
+                    WHEN so.MerchantName = 'SCORA' THEN 'SCORA'
+                    WHEN so.MerchantName = 'EBLO-MOTHERLOVE' THEN 'MOTHERLOVE'
+                    WHEN so.MerchantName = 'DEOXIDE' THEN 'DEOXIDE'
+                    WHEN so.MerchantName = 'SOMBONG' THEN 'SOMBONG'
+                    WHEN so.MerchantName = 'ESQA' THEN 'ESQA'
+                    WHEN so.MerchantName = 'NUTRA HERBAL' THEN 'NUTRA HERBAL'
+                    WHEN so.MerchantName = 'TAG' THEN 'TAG'
+                    WHEN so.MerchantName = 'SEOLMI' THEN 'SEOLMI'
+                    WHEN so.MerchantName = 'REI SKIN' THEN 'REI SKIN'
+                    WHEN so.MerchantName = 'AMAN MAJU NUSANTARA' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'CENTRAL MEDIKA SEHAT' THEN 'CENTRAL MEDIKA SEHAT'
+                    WHEN so.MerchantName = 'OREGT' THEN 'OREGT'
+                    WHEN so.MerchantName = 'PURESIA' THEN 'PURESIA'
+                    WHEN so.MerchantName = 'NACIFIC' THEN 'NACIFIC'
+                    WHEN so.MerchantName = 'SAFFNCO' THEN 'SAFFNCO'
+                    WHEN so.MerchantName = 'EBLO-CETAPHIL' THEN 'CETAPHIL'
+                    WHEN so.MerchantName = 'ISWHITE' THEN 'ISWHITE'
+                    WHEN so.MerchantName = 'ELVICTO' THEN 'ELVICTO'
+                    WHEN so.MerchantName = 'POME' THEN 'POME'
+                    WHEN so.MerchantName = 'LUXCRIME ID' THEN 'LUXCRIME'
+                    WHEN so.MerchantName = 'SKIN GAME' THEN 'SKIN GAME'
+                    WHEN so.MerchantName = 'SOMBONG OFFICIAL STORE' THEN 'SOMBONG'
+                    WHEN so.MerchantName = 'SKIN GAME OFFICIAL SHOP' THEN 'SKIN GAME'
+                    WHEN so.MerchantName = 'HISTOIRE NATURELLE OFFICIAL STORE' THEN 'HISTOIRE'
+                    WHEN so.MerchantName = 'SOMBONG MENS CARE' THEN 'SOMBONG'
+                    WHEN so.MerchantName = 'LUXCRIME_ID' THEN 'LUXCRIME'
+                    WHEN so.MerchantName = 'ESQA2BCON' THEN 'ESQA2BCON'
+                    WHEN so.MerchantName = 'ESQA2B2B' THEN 'ESQA2BCON'
+                    WHEN so.MerchantName = 'SH680AFFA3CF47E0001ABE2F8' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH680AFFCF5F1503000192BEFF' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH683034454CEDF000169A351' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName IS NULL THEN 'UNDEFINED'
+                    WHEN so.MerchantName = 'CMS' THEN 'CMS'
+                    WHEN so.MerchantName = 'SH680AFFA3CFF47E0001ABE2F8' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH680A5D8BE21B8400014847F3' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH681AD742E21B840001E630EF' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH680A60EB5F1503000192A84B' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH683034454CEDFD000169A351' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH680A60EB5F1503000192B48B' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH680A5DBE21B84000148473F3' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH680A742E21B840001E630F' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'GLOBAL MEDIKA SEHAT' THEN 'GLOBAL MEDIKA SEHAT'
+                    WHEN so.MerchantName = 'DETOSLIM' THEN 'DETOSLIM'
+                    WHEN so.MerchantName = 'HISTOIRE NATURELLE INDONESIA' THEN 'HISTOIRE'
+                    WHEN so.MerchantName = 'EBLO-MUSTELA' THEN 'MUSTELA'
+                    WHEN so.MerchantName = 'EBLO-CETAPHIL-2' THEN 'CETAPHIL'
+                    WHEN so.MerchantName = 'EBLO-INNISFREE' THEN 'INNISFREE'
+                    WHEN so.MerchantName = 'RAECCA' THEN 'RAECCA'
+                    WHEN so.MerchantName = 'SKIN1004' THEN 'SKIN1004'
+                    WHEN so.MerchantName = 'BRIGHTY' THEN 'BRIGHTY'
+                    WHEN so.MerchantName = 'FACETOLOGYODOO' THEN 'FACETOLOGY ODOO'
+                    WHEN so.MerchantName = 'OREMT' THEN 'OREMT'
+                    WHEN so.MerchantName = 'LUXCRIME2B2B' THEN 'LUXCRIME2B2B'
+                    WHEN so.MerchantName = 'RAHASIA BEAUTY' THEN 'RAHASIA BEAUTY'
+                    WHEN so.MerchantName = 'SECONDATE' THEN 'SECONDATE'
+                    WHEN so.MerchantName = 'PERFECT WHITE' THEN 'PERFECT WHITE'
+                    WHEN so.MerchantName = 'PRECIOUS SKIN' THEN 'PRECIOUS SKIN'
+                    WHEN so.MerchantName = 'BUTTERED' THEN 'BUTTERED'
+                    WHEN so.MerchantName = 'AVOSKIN' THEN 'AVOSKIN'
+                    WHEN so.MerchantName = 'MOTHER OF PEARL' THEN 'MOTHER OF PEARL'
+                    WHEN so.MerchantName = 'FINALLY FOUND YOU' THEN 'FINALLY FOUND YOU'
+                    WHEN so.MerchantName = 'ELSHEKIN' THEN 'ELSHEKIN'
+                    WHEN so.MerchantName = 'VITMAKER' THEN 'VITMAKER'
+                    WHEN so.MerchantName = 'NURILAB' THEN 'NURILAB'
+                    WHEN so.MerchantName = 'GLOOWNBE' THEN 'GLOOWNBE'
+                    WHEN so.MerchantName = 'SOMEBYMI OFFICIAL' THEN 'SOMEBYMI'
+                    WHEN so.MerchantName = 'BEAUTETOX' THEN 'BEAUTETOX'
+                    WHEN so.MerchantName = 'EBLO-DRTEALS' THEN 'DRTEALS'
+                    WHEN so.MerchantName = 'NACIFICSKIN' THEN 'NACIFICSKIN'
+                    WHEN so.MerchantName = 'HAIRMONY' THEN 'HAIRMONY'
+                    WHEN so.MerchantName = 'KEWPIE' THEN 'KEWPIE'
+                    WHEN so.MerchantName = 'ELVICTO_PARFUME' THEN 'ELVICTO PARFUME'
+                    WHEN so.MerchantName = 'RUHEE DIARY' THEN 'RUHEE DIARY'
+                    WHEN so.MerchantName = 'EBLO-CETAPHIL-TTS' THEN 'CETAPHIL'
+                    WHEN so.MerchantName = 'SH682709144CEDF0001FA8810' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'EBLO-INNISFREE-TTS' THEN 'INNISFREE'
+                    WHEN so.MerchantName = 'RAECCA' THEN 'RAECCA'
+                    WHEN so.MerchantName = 'MRKT' THEN 'MRKT'
+                    WHEN so.MerchantName = 'ESQA SHOPEE' THEN 'ESQA'
+                    WHEN so.MerchantName = 'MOTHER OF PEARL SHOPIFY' THEN 'MOTHER OF PEARL'
+                    WHEN so.MerchantName = 'SOLARTECH' THEN 'SOLARTECH'
+                    WHEN so.MerchantName = 'TENTANG ANAK B2B' THEN 'TENTANG ANAK'
+                    WHEN so.MerchantName = 'KYNDBEAUTY-TTS' THEN 'KYND'
+                    WHEN so.MerchantName = 'MOLAGI' THEN 'MOLAGI'
+                    WHEN so.MerchantName = 'EBLO-MOLAGI' THEN 'MOLAGI'
+                    WHEN so.MerchantName = 'DENISE CHARISTA' THEN 'DENISE CHARISTA'
+                    WHEN so.MerchantName = 'EBLO-ATOPALM' THEN 'ATOPALM'
+                    WHEN so.MerchantName = 'ESQAWATSON' THEN 'ESQAWATSON'
+                    WHEN so.MerchantName = 'EBLO-TAG' THEN 'TAG'
+                    WHEN so.MerchantName = 'REEDERMA LAZADA' THEN 'REEDERMA'
+                    WHEN so.MerchantName = 'EBLO-EUNYUL' THEN 'EUNYUL'
+                    WHEN so.MerchantName = 'EBLO-DEARDOER' THEN 'DEARDOER'
+                    WHEN so.MerchantName = 'NIUZ' THEN 'NIUZ'
+                    WHEN so.MerchantName = 'SUNTORYSTORE' THEN 'SUNTORYSTORE'
+                    WHEN so.MerchantName = 'KAYARU' THEN 'KAYARU'
+                    WHEN so.MerchantName = 'GREENCHEF' THEN 'GREECHEF'
+                    WHEN so.MerchantName = 'SH680A67A2E21B8400014849A9' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SH680A67FDE21B8400014849AB' THEN 'AMAN MAJU NUSANTARA'
+                    WHEN so.MerchantName = 'SUNTORYBRAND' THEN 'SUNTORYBRAND'
+                    WHEN so.MerchantName = 'EBLO-ISELECT' THEN 'ISELECT'
+                    WHEN so.MerchantName = 'EBLO-CETAPHIL-TTS' THEN 'CETAPHIL'
+                    WHEN so.MerchantName = 'FILMORE-TTS' THEN 'FILMORE'
+                    WHEN so.MerchantName = 'EBLO-INNISFREE-TTS' THEN 'INNISFREE'
+                    WHEN so.MerchantName = 'MRKT' THEN 'MRKT'
+                    WHEN so.MerchantName = 'ESQA SHOPEE' THEN 'ESQA'
+                    WHEN so.MerchantName = 'MOTHER OF PEARL SHOPIFY' THEN 'MOTHER OF PEARL'
+                    WHEN so.MerchantName = 'SOLARTECH' THEN 'SOLARTECH'
+                    WHEN so.MerchantName = 'TENTANG ANAK B2B' THEN 'TENTANG ANAK'
+                    WHEN so.MerchantName = 'KYNDBEAUTY-TTS' THEN 'KYND'
+                    WHEN so.MerchantName = 'MOLAGI' THEN 'MOLAGI'
+                    ELSE so.MerchantName
+                END AS Brand,
+                so.SystemRefId,
+                so.OrderDate,
+                CASE 
+                    WHEN so.SystemId = 'MPSH'
+                     AND so.OrderedById = 'LOGISTICS_NOT_START'
+                     AND so.OrderStatus = 'READY_TO_SHIP'
+                    THEN 'PENDING VERIFIKASI'
+                    ELSE so.OrderStatus
+                END AS [ORDER STATUS],
+                CASE 
+                    WHEN ol.ordnum IS NOT NULL THEN 'Yes'
+                    ELSE 'No'
+                END AS [Status_Interfaced],
+                CASE 
+                    WHEN so.OrderDate < DATEADD(MINUTE, -59, GETDATE())
+                    THEN 'Lebih Dari 1 jam'
+                    ELSE 'Kurang Dari 1 jam'
+                END AS [Status_Durasi]
+            FROM Flexo_Db.dbo.SalesOrder so WITH (NOLOCK)
+            LEFT JOIN (
+                SELECT DISTINCT ordnum
+                FROM WMSPROD.dbo.ord_line WITH (NOLOCK)
+            ) ol
+                ON ol.ordnum = so.SystemRefId
+            WHERE {where_clause}
+              AND so.FulfilledByFlexo <> '0'
+            ORDER BY so.OrderDate DESC
             OFFSET {offset} ROWS 
             FETCH NEXT {per_page} ROWS ONLY
             """
@@ -2393,34 +2468,34 @@ def get_late_sku_data():
             
             # Execute the SKU Telat Masuk query
             query = """
-            SELECT DISTINCT
+            SELECT
                 UPPER(so.MerchantName) AS Client,
                 lseg.ORDNUM,
                 lseg.ORDLIN,
                 lseg.PRTNUM,
-                CASE
-                    WHEN od.ordnum IS NOT NULL THEN 'Yes'
-                    ELSE 'No'
-                END AS Interface,
+                'Yes' AS Interface,
                 CASE 
-                    WHEN lseg.ordqty = ol.ordqty THEN 'Match'
-                    ELSE 'Not Match'
+                    WHEN lseg.ordqty = ol.ordqty THEN 'Match' 
+                    ELSE 'Not Match' 
                 END AS LineStatus
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
-            LEFT JOIN WMSPROD.dbo.ord_line ol WITH(NOLOCK)
-                ON lseg.ordnum = ol.ordnum 
-                AND lseg.ordlin = ol.ordlin 
-                AND lseg.ordsln = ol.ordsln 
-                AND lseg.prtnum = ol.prtnum
-            LEFT JOIN WMSPROD.dbo.ord od WITH(NOLOCK)
-                ON lseg.ordnum = od.ordnum
-            LEFT JOIN Flexo_db.dbo.SalesOrder so WITH(NOLOCK)
-                ON lseg.ordnum = so.systemrefid
+            FROM Flexo_db.dbo.SalesOrder so WITH(NOLOCK)
+            JOIN WMSPROD.dbo.ord od WITH(NOLOCK)
+                ON so.systemrefid = od.ordnum
+            JOIN WMSPROD.dbo.ord_line ol WITH(NOLOCK)
+                ON od.ordnum = ol.ordnum
+            JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
+                ON lseg.ordnum = ol.ordnum
+               AND lseg.ordlin = ol.ordlin
+               AND lseg.ordsln = ol.ordsln
+               AND lseg.prtnum = ol.prtnum
             WHERE 
-                so.OrderDate > DATEADD(DAY, -3, GETDATE())
-                AND od.ordnum IS NOT NULL
-                AND ISNULL(lseg.ordqty, 0) <> ISNULL(ol.ordqty, 0)
+                so.OrderDate >= DATEADD(DAY, -3, CAST(GETDATE() AS DATE))
                 AND so.orderstatus <> 'cancelled'
+                AND (
+                    lseg.ordqty <> ol.ordqty
+                    OR lseg.ordqty IS NULL
+                    OR ol.ordqty IS NULL
+                )
             """
             
             cursor.execute(query)
@@ -2487,26 +2562,23 @@ def get_invalid_sku_data():
             
             # Execute the Invalid SKU query
             query = """
-            SELECT DISTINCT
+            SELECT
                 UPPER(so.MerchantName) AS Client,
                 lseg.ORDNUM,
                 lseg.ORDLIN,
                 lseg.PRTNUM,
-                CASE 
-                    WHEN sku.prtnum IS NULL THEN 'Invalid SKU'
-                    ELSE ''
-                END AS Issue
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
-            LEFT JOIN WMSPROD.dbo.prtmst sku WITH(NOLOCK)
-                ON lseg.prtnum = sku.prtnum 
-                AND sku.wh_id_tmpl = 'WMD1'
-            LEFT JOIN Flexo_db.dbo.SalesOrder so WITH(NOLOCK)
+                'Invalid SKU' AS Issue
+            FROM Flexo_db.dbo.SalesOrder so WITH(NOLOCK)
+            JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
                 ON lseg.ordnum = so.systemrefid
+            LEFT JOIN WMSPROD.dbo.prtmst sku WITH(NOLOCK)
+                ON lseg.prtnum = sku.prtnum
+               AND sku.wh_id_tmpl = 'WMD1'
             WHERE 
-                so.OrderDate > DATEADD(DAY, -3, GETDATE())
-                AND sku.prtnum IS NULL
+                so.OrderDate >= DATEADD(DAY, -3, CAST(GETDATE() AS DATE))
                 AND so.FulfilledByFlexo <> '0'
                 AND so.orderstatus <> 'cancelled'
+                AND sku.prtnum IS NULL
             ORDER BY lseg.PRTNUM
             """
             
@@ -2574,14 +2646,16 @@ def get_duplicate_orders_data():
             
             # Execute the Order Duplikat query
             query = """
+            DECLARE @startDate DATETIME = DATEADD(DAY, -3, CAST(GETDATE() AS DATE));
+
             SELECT 
                 lseg.ORDNUM, 
                 lseg.ORDLIN, 
-                COUNT(*) AS jumlah
+                COUNT_BIG(*) AS jumlah
             FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
-            WHERE lseg.ENTDTE >= DATEADD(DAY, -3, GETDATE())
+            WHERE lseg.ENTDTE >= @startDate
             GROUP BY lseg.ORDNUM, lseg.ORDLIN
-            HAVING COUNT(*) > 1
+            HAVING COUNT_BIG(*) > 1
             """
             
             cursor.execute(query)
