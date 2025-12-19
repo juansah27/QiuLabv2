@@ -2468,7 +2468,7 @@ def get_late_sku_data():
             
             # Execute the SKU Telat Masuk query
             query = """
-            SELECT
+            SELECT DISTINCT
                 UPPER(so.MerchantName) AS Client,
                 lseg.ORDNUM,
                 lseg.ORDLIN,
@@ -2479,11 +2479,11 @@ def get_late_sku_data():
                     ELSE 'Not Match' 
                 END AS LineStatus
             FROM Flexo_db.dbo.SalesOrder so WITH(NOLOCK)
-            JOIN WMSPROD.dbo.ord od WITH(NOLOCK)
-                ON so.systemrefid = od.ordnum
-            JOIN WMSPROD.dbo.ord_line ol WITH(NOLOCK)
-                ON od.ordnum = ol.ordnum
             JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
+                ON lseg.ordnum = so.systemrefid
+            JOIN WMSPROD.dbo.ord od WITH(NOLOCK)
+                ON lseg.ordnum = od.ordnum
+            LEFT JOIN WMSPROD.dbo.ord_line ol WITH(NOLOCK)
                 ON lseg.ordnum = ol.ordnum
                AND lseg.ordlin = ol.ordlin
                AND lseg.ordsln = ol.ordsln
