@@ -83,6 +83,7 @@ WITH Duplikat AS (
         ROW_NUMBER() OVER (PARTITION BY ORDNUM, ORDLIN ORDER BY ENTDTE, ORDLIN) AS rn
     FROM flexo_api.dbo.ORDER_LINE_SEG
     WHERE ORDNUM IN ({IDS})
+    AND TOT_PLN_PAL_QTY IS NULL
 )
 DELETE FROM Duplikat
 WHERE rn > 1;
@@ -93,6 +94,7 @@ WITH Duplikat AS (
         ROW_NUMBER() OVER (PARTITION BY ORDNUM, ORDLIN ORDER BY ENTDTE, ORDLIN) AS rn
     FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
     WHERE ORDNUM IN ({IDS})
+    AND TOT_PLN_PAL_QTY IS NULL
 )
 DELETE FROM Duplikat
 WHERE rn > 1;`,
@@ -208,6 +210,22 @@ WHERE So.SystemRefId IN ({IDS});`,
       hxml.SLOT,
       hxml.STATUS,
       hxml.TRANSFERDATE
+FROM [SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
+LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
+    ON LXML.ORDNUM = hxml.ORDNUM
+WHERE hxml.ordnum IN ({IDS});`,
+
+  // Line Live
+  line_live: `SELECT 
+      '' AS [Client ID],
+      hxml.ORDNUM,
+      lxml.PRTNUM,
+      lxml.ORDLIN,
+      lxml.ORDSLN,
+      lxml.ORDQTY,
+      lxml.INVSTS_PRG,
+      lxml.CANCELLED_FLG,
+      hxml.ORDTYP
 FROM [SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
 LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
     ON LXML.ORDNUM = hxml.ORDNUM

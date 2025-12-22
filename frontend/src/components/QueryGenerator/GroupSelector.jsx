@@ -18,6 +18,7 @@ const QUERY_GROUPS = [
   { id: 'template_pero', label: 'Template Pero' },
   { id: 'query_so_sol', label: 'Query SO & SOL' },
   { id: 'query_xml_xml_line', label: 'Query XML dan XML Line' },
+  { id: 'line_live', label: 'Line Live' },
 ];
 
 const GroupSelector = ({ selectedGroup, onGroupChange }) => {
