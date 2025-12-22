@@ -27,10 +27,14 @@ if not exist "frontend" (
     exit /b 1
 )
 
+:: Simpan path root project (mengantisipasi path dengan spasi)
+set "ROOT_DIR=%~dp0"
+if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
+
 :: 1. Setup Backend
 echo [INFO] Memulai setup backend...
 
-cd backend
+cd /d "%ROOT_DIR%\backend"
 
 :: Verifikasi Python tersedia
 where python >nul 2>nul
@@ -42,7 +46,7 @@ if %ERRORLEVEL% neq 0 (
 :: Setup virtual environment jika belum ada
 if not exist "venv" (
     echo [INFO] Membuat virtual environment...
-    python -m venv venv
+    python -m venv "venv"
     if %ERRORLEVEL% neq 0 (
         echo [ERROR] Gagal membuat virtual environment
         exit /b 1
@@ -52,11 +56,11 @@ if not exist "venv" (
 
 :: Aktifkan virtual environment
 echo [INFO] Mengaktifkan virtual environment...
-call venv\Scripts\activate
+call "venv\Scripts\activate.bat"
 
 :: Install dependensi
 echo [INFO] Menginstal dependensi backend...
-pip install -r requirements.txt
+pip install -r "requirements.txt"
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Gagal menginstal dependensi backend
     exit /b 1
@@ -75,12 +79,12 @@ if "%MODE%"=="prod" (
 )
 
 :: Kembali ke direktori root
-cd ..
+cd /d "%ROOT_DIR%"
 
 :: 2. Setup Frontend
 echo [INFO] Memulai setup frontend...
 
-cd frontend
+cd /d "%ROOT_DIR%\frontend"
 
 :: Verifikasi Node.js tersedia
 where npm >nul 2>nul
@@ -110,7 +114,7 @@ if "%MODE%"=="prod" (
 )
 
 :: Kembali ke direktori root
-cd ..
+cd /d "%ROOT_DIR%"
 
 :: 3. Jalankan aplikasi sesuai mode
 if "%MODE%"=="dev" (
@@ -119,11 +123,13 @@ if "%MODE%"=="dev" (
     
     :: Jalankan backend dalam console terpisah
     echo [INFO] Memulai backend di http://localhost:5000...
-    start "Backend Server" cmd /k "cd backend && call venv\Scripts\activate && python run_dev.py"
+    set "BACKEND_CMD=cd /d \"!ROOT_DIR!\backend\" && call \"venv\Scripts\activate.bat\" && python run_dev.py"
+    start "Backend Server" cmd /k "!BACKEND_CMD!"
     
     :: Jalankan frontend dalam console terpisah
     echo [INFO] Memulai frontend di http://localhost:3000...
-    start "Frontend Server" cmd /k "cd frontend && npm run dev:network"
+    set "FRONTEND_CMD=cd /d \"!ROOT_DIR!\frontend\" && npm run dev:network"
+    start "Frontend Server" cmd /k "!FRONTEND_CMD!"
     
     echo [SUCCESS] Mode development dijalankan. Buka browser di http://localhost:3000
     echo [INFO] Tekan Ctrl+C pada masing-masing console untuk menghentikan server
@@ -134,11 +140,13 @@ if "%MODE%"=="dev" (
     
     :: Jalankan backend dalam console terpisah
     echo [INFO] Memulai backend production server...
-    start "Production Backend" cmd /k "cd backend && call venv\Scripts\activate && python run_prod.py"
+    set "BACKEND_CMD=cd /d \"!ROOT_DIR!\backend\" && call \"venv\Scripts\activate.bat\" && python run_prod.py"
+    start "Production Backend" cmd /k "!BACKEND_CMD!"
     
     :: Jalankan frontend (hasil build) dalam console terpisah
     echo [INFO] Memulai frontend production server...
-    start "Production Frontend" cmd /k "cd frontend && npm run preview:network"
+    set "FRONTEND_CMD=cd /d \"!ROOT_DIR!\frontend\" && npm run preview:network"
+    start "Production Frontend" cmd /k "!FRONTEND_CMD!"
     
     echo [SUCCESS] Mode production dijalankan. Buka browser di http://localhost:4173
     echo [INFO] Tekan Ctrl+C pada masing-masing console untuk menghentikan server
