@@ -2468,34 +2468,35 @@ def get_late_sku_data():
             
             # Execute the SKU Telat Masuk query
             query = """
-            SELECT DISTINCT
-                UPPER(so.MerchantName) AS Client,
-                lseg.ORDNUM,
-                lseg.ORDLIN,
-                lseg.PRTNUM,
-                'Yes' AS Interface,
-                CASE 
-                    WHEN lseg.ordqty = ol.ordqty THEN 'Match' 
-                    ELSE 'Not Match' 
-                END AS LineStatus
-            FROM Flexo_db.dbo.SalesOrder so WITH(NOLOCK)
-            JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
-                ON lseg.ordnum = so.systemrefid
-            JOIN WMSPROD.dbo.ord od WITH(NOLOCK)
-                ON lseg.ordnum = od.ordnum
-            LEFT JOIN WMSPROD.dbo.ord_line ol WITH(NOLOCK)
-                ON lseg.ordnum = ol.ordnum
-               AND lseg.ordlin = ol.ordlin
-               AND lseg.ordsln = ol.ordsln
-               AND lseg.prtnum = ol.prtnum
-            WHERE 
-                so.OrderDate >= DATEADD(DAY, -3, CAST(GETDATE() AS DATE))
-                AND so.orderstatus <> 'cancelled'
-                AND (
-                    lseg.ordqty <> ol.ordqty
-                    OR lseg.ordqty IS NULL
-                    OR ol.ordqty IS NULL
+            WITH XML_RANK AS (
+                SELECT
+                    x.ORDNUM,
+                    x.PRTNUM,
+                    x.ORDLIN,
+                    x.ORDSLN,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY x.ORDNUM, x.ORDLIN, x.ORDSLN, x.PRTNUM
+                        ORDER BY x.ENTDTE DESC
+                    ) AS rn
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG x
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG j
+                    WHERE j.ORDNUM = x.ORDNUM
+                      AND j.ENTDTE >= DATEADD(DAY, -3, GETDATE())
                 )
+            )
+            SELECT x.ORDNUM, x.PRTNUM, x.ORDLIN, x.ORDSLN
+            FROM XML_RANK x
+            WHERE x.rn = 1
+            AND NOT EXISTS (
+                SELECT 1
+                FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG j
+                WHERE j.ORDNUM = x.ORDNUM
+                  AND j.ORDLIN = x.ORDLIN
+                  AND j.ORDSLN = x.ORDSLN
+                  AND j.PRTNUM = x.PRTNUM
+            )
             """
             
             cursor.execute(query)
@@ -2646,16 +2647,17 @@ def get_duplicate_orders_data():
             
             # Execute the Order Duplikat query
             query = """
-            DECLARE @startDate DATETIME = DATEADD(DAY, -3, CAST(GETDATE() AS DATE));
-
-            SELECT 
-                lseg.ORDNUM, 
-                lseg.ORDLIN, 
-                COUNT_BIG(*) AS jumlah
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG lseg WITH(NOLOCK)
-            WHERE lseg.ENTDTE >= @startDate
-            GROUP BY lseg.ORDNUM, lseg.ORDLIN
-            HAVING COUNT_BIG(*) > 1
+            SELECT ORDNUM, PRTNUM, ORDLIN, ORDSLN
+            FROM (
+                SELECT *,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY ORDNUM, PRTNUM, ORDLIN, ORDSLN 
+                           ORDER BY ENTDTE DESC
+                       ) AS rn
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG WITH (NOLOCK)
+                WHERE ENTDTE >= DATEADD(DAY, -90, GETDATE())
+            ) a
+            WHERE rn > 1 and TOT_PLN_PAL_QTY IS NULL
             """
             
             cursor.execute(query)

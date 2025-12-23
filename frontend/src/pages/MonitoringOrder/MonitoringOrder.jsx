@@ -67,8 +67,12 @@ const StatCard = ({ title, value, icon: Icon, color, loading = false, onClick })
   );
 };
 
-// Skeleton Components
-const StatCardSkeleton = ({ color = 'blue' }) => {
+// Enhanced Skeleton Components with Shimmer Effect
+const Shimmer = () => (
+  <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/60 dark:via-white/10 to-transparent"></div>
+);
+
+const StatCardSkeleton = ({ color = 'blue', delay = 0 }) => {
   const getColorClasses = (color) => {
     const colorMap = {
       blue: 'bg-blue-100 dark:bg-blue-900/20',
@@ -82,33 +86,128 @@ const StatCardSkeleton = ({ color = 'blue' }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+    <div 
+      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm overflow-hidden relative"
+      style={{ animationDelay: `${delay * 100}ms` }}
+    >
       <div className="flex items-center space-x-3">
-        <div className={`p-3 rounded-lg ${getColorClasses(color)} animate-pulse`}>
-          <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        <div className={`p-3 rounded-lg ${getColorClasses(color)} relative overflow-hidden`}>
+          <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+          <Shimmer />
         </div>
-        <div className="flex-1">
-          <div className="animate-pulse h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
-          <div className="animate-pulse h-8 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 relative overflow-hidden">
+            <Shimmer />
+          </div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20 relative overflow-hidden">
+            <Shimmer />
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const ChartSkeleton = ({ height = '400px' }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-    <div className="animate-pulse h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
+const ChartSkeleton = ({ height = '400px', delay = 0 }) => (
+  <div 
+    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm relative overflow-hidden"
+    style={{ animationDelay: `${delay * 100}ms` }}
+  >
+    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4 relative overflow-hidden">
+      <Shimmer />
+    </div>
     <div className="flex items-center justify-between mb-4">
-      <div className="animate-pulse h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-      <div className="animate-pulse h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 relative overflow-hidden">
+        <Shimmer />
+      </div>
+      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 relative overflow-hidden">
+        <Shimmer />
+      </div>
     </div>
     <div 
-      className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded"
+      className="bg-gray-200 dark:bg-gray-700 rounded relative overflow-hidden"
       style={{ height }}
-    ></div>
+    >
+      <Shimmer />
+      {/* Simulated chart bars */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-around px-4 pb-4 gap-2">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="bg-gray-300 dark:bg-gray-600 rounded-t"
+            style={{
+              width: '8%',
+              height: `${20 + Math.random() * 60}%`,
+              animationDelay: `${i * 50}ms`
+            }}
+          />
+        ))}
+      </div>
+    </div>
   </div>
 );
+
+// Loading Tips Component
+const LoadingTips = () => {
+  const tips = [
+    "💡 Pro tip: Filter by date range untuk performa lebih cepat",
+    "📊 Data diupdate secara real-time dari database",
+    "⚡ Menggunakan optimasi query untuk loading cepat",
+    "🎯 Klik pada stat card untuk melihat detail lengkap",
+    "🔄 Refresh otomatis setiap beberapa detik",
+    "📈 Charts menampilkan data terbaru dari sistem",
+    "🔍 Gunakan filter untuk fokus pada data spesifik",
+    "✨ Dashboard ini menggunakan teknologi modern untuk performa optimal"
+  ];
+  
+  const [currentTip, setCurrentTip] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTip((prev) => (prev + 1) % tips.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [tips.length]);
+  
+  return (
+    <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 mb-6">
+      <div className="flex items-center space-x-3">
+        <div className="flex-shrink-0">
+          <div className="relative w-8 h-8">
+            <div className="absolute inset-0 border-4 border-blue-200 dark:border-blue-700 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin"></div>
+          </div>
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-blue-900 dark:text-blue-200 animate-fade-in">
+            {tips[currentTip]}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Progress Loading Component
+const ProgressLoader = ({ progress = 0, message = "Loading..." }) => {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{message}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{Math.min(progress, 100)}%</span>
+        </div>
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div 
+            className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          >
+            <Shimmer />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TableSkeleton = ({ rows = 5, columns = 6 }) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
@@ -195,9 +294,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
           case 'lateSku':
             return [
               { label: 'Total Records', value: dataArray.length, color: 'blue' },
-              { label: 'Interface Yes', value: sample.filter(item => item.Interface === 'Yes').length, color: 'green' },
-              { label: 'Interface No', value: sample.filter(item => item.Interface === 'No').length, color: 'red' },
-              { label: 'Line Match', value: sample.filter(item => item.LineStatus === 'Match').length, color: 'yellow' }
+              { label: 'Unique Orders', value: new Set(sample.map(item => item.ORDNUM)).size, color: 'green' },
+              { label: 'Unique SKUs', value: new Set(sample.map(item => item.PRTNUM)).size, color: 'purple' },
+              { label: 'Unique Order Lines', value: new Set(sample.map(item => `${item.ORDNUM}-${item.ORDLIN}-${item.ORDSLN}`)).size, color: 'orange' }
             ];
           case 'invalidSku':
             return [
@@ -209,9 +308,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
           case 'duplicate':
             return [
               { label: 'Total Records', value: dataArray.length, color: 'blue' },
-              { label: 'Total Duplicates', value: sample.reduce((sum, item) => sum + (parseInt(item.jumlah) || 0), 0), color: 'red' },
               { label: 'Unique Orders', value: new Set(sample.map(item => item.ORDNUM)).size, color: 'green' },
-              { label: 'Avg Duplicates', value: Math.round(sample.reduce((sum, item) => sum + (parseInt(item.jumlah) || 0), 0) / sample.length), color: 'orange' }
+              { label: 'Unique SKUs', value: new Set(sample.map(item => item.PRTNUM)).size, color: 'purple' },
+              { label: 'Unique Order Lines', value: new Set(sample.map(item => `${item.ORDNUM}-${item.ORDLIN}`)).size, color: 'orange' }
             ];
           default:
             return [{ label: 'Total Records', value: dataArray.length, color: 'blue' }];
@@ -229,9 +328,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
           case 'lateSku':
             return [
               { label: 'Total Records', value: dataArray.length, color: 'blue' },
-              { label: 'Interface Yes', value: dataArray.filter(item => item.Interface === 'Yes').length, color: 'green' },
-              { label: 'Interface No', value: dataArray.filter(item => item.Interface === 'No').length, color: 'red' },
-              { label: 'Line Match', value: dataArray.filter(item => item.LineStatus === 'Match').length, color: 'yellow' }
+              { label: 'Unique Orders', value: new Set(dataArray.map(item => item.ORDNUM)).size, color: 'green' },
+              { label: 'Unique SKUs', value: new Set(dataArray.map(item => item.PRTNUM)).size, color: 'purple' },
+              { label: 'Unique Order Lines', value: new Set(dataArray.map(item => `${item.ORDNUM}-${item.ORDLIN}-${item.ORDSLN}`)).size, color: 'orange' }
             ];
           case 'invalidSku':
             return [
@@ -243,9 +342,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
           case 'duplicate':
             return [
               { label: 'Total Records', value: dataArray.length, color: 'blue' },
-              { label: 'Total Duplicates', value: dataArray.reduce((sum, item) => sum + (parseInt(item.jumlah) || 0), 0), color: 'red' },
               { label: 'Unique Orders', value: new Set(dataArray.map(item => item.ORDNUM)).size, color: 'green' },
-              { label: 'Avg Duplicates', value: Math.round(dataArray.reduce((sum, item) => sum + (parseInt(item.jumlah) || 0), 0) / dataArray.length), color: 'orange' }
+              { label: 'Unique SKUs', value: new Set(dataArray.map(item => item.PRTNUM)).size, color: 'purple' },
+              { label: 'Unique Order Lines', value: new Set(dataArray.map(item => `${item.ORDNUM}-${item.ORDLIN}`)).size, color: 'orange' }
             ];
           default:
             return [{ label: 'Total Records', value: dataArray.length, color: 'blue' }];
@@ -262,9 +361,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
     }
     
     // Check if it's late SKU data
-    if (firstItem.Client && firstItem.ORDNUM && firstItem.PRTNUM) {
+    if (firstItem.ORDNUM && firstItem.PRTNUM && firstItem.ORDLIN !== undefined && firstItem.ORDSLN !== undefined) {
       return {
-        headers: ['Client', 'ORDNUM', 'ORDLIN', 'PRTNUM', 'Interface', 'LineStatus'],
+        headers: ['ORDNUM', 'PRTNUM', 'ORDLIN', 'ORDSLN'],
         summaryStats: calculateStats(data, 'lateSku')
       };
     }
@@ -278,9 +377,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
     }
     
     // Check if it's duplicate order data
-    if (firstItem.ORDNUM && firstItem.ORDLIN && firstItem.jumlah) {
+    if (firstItem.ORDNUM && firstItem.ORDLIN && firstItem.PRTNUM && firstItem.ORDSLN !== undefined) {
       return {
-        headers: ['ORDNUM', 'ORDLIN', 'jumlah'],
+        headers: ['ORDNUM', 'PRTNUM', 'ORDLIN', 'ORDSLN'],
         summaryStats: calculateStats(data, 'duplicate')
       };
     }
@@ -530,10 +629,6 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
                             ) : header === 'ORDER STATUS' || header === 'Status_Interfaced' || header === 'Status_Durasi' || header === 'Interface' || header === 'LineStatus' || header === 'Issue' ? (
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item[header])}`}>
                                 {item[header]}
-                              </span>
-                            ) : header === 'jumlah' ? (
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400">
-                                {item[header]} times
                               </span>
                             ) : (
                               item[header]
@@ -1356,6 +1451,32 @@ const MonitoringOrder = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <style>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        @keyframes fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out;
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -1442,66 +1563,80 @@ const MonitoringOrder = () => {
           loading={loadingCards}
         />
 
+        {/* Loading Tips - Show when loading */}
+        {(loadingCards || loadingCharts || loadingAdditionalData) && <LoadingTips />}
+
         {/* Stats Cards - Load first with cardsData */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-          <StatCard 
-            title="Total Orders" 
-            value={data.cards.totalOrder} 
-            icon={ChartBarIcon} 
-            color="blue" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrder')}
-          />
-          <StatCard 
-            title="Interfaced" 
-            value={data.cards.totalOrderInterface} 
-            icon={CheckCircleIcon} 
-            color="green" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderInterface')}
-          />
-          <StatCard 
-            title="Not Interfaced" 
-            value={data.cards.totalOrderNotYetInterface} 
-            icon={XCircleIcon} 
-            color="red" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderNotYetInterface')}
-          />
-          <StatCard 
-            title="Pending Verification" 
-            value={data.cards.totalOrderPendingVerifikasi} 
-            icon={ClockIcon} 
-            color="yellow" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
-          />
-          <StatCard 
-            title=" > 1 Hour" 
-            value={data.cards.totalOrderLebihDari1Jam} 
-            icon={ArrowTrendingUpIcon} 
-            color="orange" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
-          />
-          <StatCard 
-            title=" < 1 Hour" 
-            value={data.cards.totalOrderKurangDari1Jam} 
-            icon={ArrowTrendingDownIcon} 
-            color="purple" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
-          />
+          {loadingCards ? (
+            <>
+              <StatCardSkeleton color="blue" delay={0} />
+              <StatCardSkeleton color="green" delay={1} />
+              <StatCardSkeleton color="red" delay={2} />
+              <StatCardSkeleton color="yellow" delay={3} />
+              <StatCardSkeleton color="orange" delay={4} />
+              <StatCardSkeleton color="purple" delay={5} />
+            </>
+          ) : (
+            <>
+              <StatCard 
+                title="Total Orders" 
+                value={data.cards.totalOrder} 
+                icon={ChartBarIcon} 
+                color="blue" 
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrder')}
+              />
+              <StatCard 
+                title="Interfaced" 
+                value={data.cards.totalOrderInterface} 
+                icon={CheckCircleIcon} 
+                color="green" 
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderInterface')}
+              />
+              <StatCard 
+                title="Not Interfaced" 
+                value={data.cards.totalOrderNotYetInterface} 
+                icon={XCircleIcon} 
+                color="red" 
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderNotYetInterface')}
+              />
+              <StatCard 
+                title="Pending Verification" 
+                value={data.cards.totalOrderPendingVerifikasi} 
+                icon={ClockIcon} 
+                color="yellow" 
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
+              />
+              <StatCard 
+                title=" > 1 Hour" 
+                value={data.cards.totalOrderLebihDari1Jam} 
+                icon={ArrowTrendingUpIcon} 
+                color="orange" 
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
+              />
+              <StatCard 
+                title=" < 1 Hour" 
+                value={data.cards.totalOrderKurangDari1Jam} 
+                icon={ArrowTrendingDownIcon} 
+                color="purple" 
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
+              />
+            </>
+          )}
         </div>
 
-        {/* Charts Loading Indicator */}
+        {/* Charts Loading Indicator with Progress */}
         {loadingCharts && (
-          <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
-            <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-              <span className="text-sm text-blue-800 dark:text-blue-200">Loading charts data...</span>
-            </div>
-          </div>
+          <ProgressLoader 
+            progress={rawData.length > 0 ? Math.min((rawData.length / 100000) * 100, 95) : 30}
+            message="Loading charts data..."
+          />
         )}
 
         {/* Charts Grid */}
@@ -1566,12 +1701,7 @@ const MonitoringOrder = () => {
             {brandsView === 'chart' && (
               <div className="h-[500px]">
                 {loadingCharts ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
-                    </div>
-                  </div>
+                  <ChartSkeleton height="500px" delay={0} />
                 ) : data.top20Data && data.top20Data.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
@@ -1753,8 +1883,9 @@ const MonitoringOrder = () => {
             {/* Platform Chart View */}
             {marketplaceView === 'chart' && (
               <div className="h-[500px]">
-
-                {data.topMarketplaceData && data.topMarketplaceData.length > 0 ? (
+                {loadingCharts ? (
+                  <ChartSkeleton height="500px" delay={1} />
+                ) : data.topMarketplaceData && data.topMarketplaceData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
                       layout="vertical"
@@ -1865,65 +1996,75 @@ const MonitoringOrder = () => {
 
         {/* Additional Data Grids */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* SKU Telat Masuk */}
-          <StatCard
-            title="SKU Telat Masuk"
-            value={lateSkuData.length}
-            icon={ExclamationTriangleIcon}
-            color="red"
-            loading={loadingAdditionalData}
-            onClick={() => {
-              // Limit display to 10k, but keep full data for copying
-              const limitedLateSku = lateSkuData.slice(0, 10000);
-              setModalState({
-                isOpen: true,
-                title: `SKU Telat Masuk Details${lateSkuData.length > 10000 ? ` (Showing first 10,000 of ${lateSkuData.length.toLocaleString()})` : ''}`,
-                data: limitedLateSku,
-                fullData: lateSkuData,
-                loading: false
-              });
-            }}
-          />
+          {loadingAdditionalData ? (
+            <>
+              <StatCardSkeleton color="red" delay={0} />
+              <StatCardSkeleton color="orange" delay={1} />
+              <StatCardSkeleton color="purple" delay={2} />
+            </>
+          ) : (
+            <>
+              {/* SKU Telat Masuk */}
+              <StatCard
+                title="SKU Telat Masuk"
+                value={lateSkuData.length}
+                icon={ExclamationTriangleIcon}
+                color="red"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  // Limit display to 10k, but keep full data for copying
+                  const limitedLateSku = lateSkuData.slice(0, 10000);
+                  setModalState({
+                    isOpen: true,
+                    title: `SKU Telat Masuk Details${lateSkuData.length > 10000 ? ` (Showing first 10,000 of ${lateSkuData.length.toLocaleString()})` : ''}`,
+                    data: limitedLateSku,
+                    fullData: lateSkuData,
+                    loading: false
+                  });
+                }}
+              />
 
-          {/* Invalid SKU */}
-          <StatCard
-            title="Invalid SKU"
-            value={invalidSkuData.length}
-            icon={XCircleIcon}
-            color="orange"
-            loading={loadingAdditionalData}
-            onClick={() => {
-              // Limit display to 10k, but keep full data for copying
-              const limitedInvalidSku = invalidSkuData.slice(0, 10000);
-              setModalState({
-                isOpen: true,
-                title: `Invalid SKU Details${invalidSkuData.length > 10000 ? ` (Showing first 10,000 of ${invalidSkuData.length.toLocaleString()})` : ''}`,
-                data: limitedInvalidSku,
-                fullData: invalidSkuData,
-                loading: false
-              });
-            }}
-          />
+              {/* Invalid SKU */}
+              <StatCard
+                title="Invalid SKU"
+                value={invalidSkuData.length}
+                icon={XCircleIcon}
+                color="orange"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  // Limit display to 10k, but keep full data for copying
+                  const limitedInvalidSku = invalidSkuData.slice(0, 10000);
+                  setModalState({
+                    isOpen: true,
+                    title: `Invalid SKU Details${invalidSkuData.length > 10000 ? ` (Showing first 10,000 of ${invalidSkuData.length.toLocaleString()})` : ''}`,
+                    data: limitedInvalidSku,
+                    fullData: invalidSkuData,
+                    loading: false
+                  });
+                }}
+              />
 
-          {/* Order Duplikat */}
-          <StatCard
-            title="Order Duplikat"
-            value={duplicateOrderData.length}
-            icon={ClipboardDocumentIcon}
-            color="purple"
-            loading={loadingAdditionalData}
-            onClick={() => {
-              // Limit display to 10k, but keep full data for copying
-              const limitedDuplicate = duplicateOrderData.slice(0, 10000);
-              setModalState({
-                isOpen: true,
-                title: `Order Duplikat Details${duplicateOrderData.length > 10000 ? ` (Showing first 10,000 of ${duplicateOrderData.length.toLocaleString()})` : ''}`,
-                data: limitedDuplicate,
-                fullData: duplicateOrderData,
-                loading: false
-              });
-            }}
-          />
+              {/* Order Duplikat */}
+              <StatCard
+                title="Order Duplikat"
+                value={duplicateOrderData.length}
+                icon={ClipboardDocumentIcon}
+                color="purple"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  // Limit display to 10k, but keep full data for copying
+                  const limitedDuplicate = duplicateOrderData.slice(0, 10000);
+                  setModalState({
+                    isOpen: true,
+                    title: `Order Duplikat Details${duplicateOrderData.length > 10000 ? ` (Showing first 10,000 of ${duplicateOrderData.length.toLocaleString()})` : ''}`,
+                    data: limitedDuplicate,
+                    fullData: duplicateOrderData,
+                    loading: false
+                  });
+                }}
+              />
+            </>
+          )}
         </div>
 
         {/* Order Evolution Chart */}
@@ -1981,12 +2122,7 @@ const MonitoringOrder = () => {
             {/* Chart */}
             <div className="h-[400px]">
               {loadingCharts ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
-                  </div>
-                </div>
+                <ChartSkeleton height="400px" delay={2} />
               ) : data.orderEvolution.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart 
