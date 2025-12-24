@@ -8,6 +8,62 @@ from dotenv import load_dotenv, find_dotenv
 import pyodbc
 from datetime import datetime, timedelta
 
+# Helper function to get available ODBC driver
+def get_odbc_driver():
+    """
+    Get available ODBC Driver for SQL Server.
+    Tries multiple driver names in order of preference.
+    Returns the first available driver or raises exception.
+    """
+    # List of drivers to try in order of preference
+    drivers_to_try = [
+        'ODBC Driver 17 for SQL Server',
+        'ODBC Driver 18 for SQL Server',
+        'ODBC Driver 19 for SQL Server',
+        'SQL Server Native Client 11.0',
+        'SQL Server',
+        'SQL Server Native Client 10.0'
+    ]
+    
+    # Get list of available drivers
+    try:
+        available_drivers = [driver for driver in pyodbc.drivers()]
+        
+        # Try to find a matching driver
+        for driver_name in drivers_to_try:
+            if driver_name in available_drivers:
+                return driver_name
+        
+        # If no driver found, return error message with available drivers
+        available_list = ', '.join(available_drivers) if available_drivers else 'None'
+        raise Exception(
+            f"ODBC Driver for SQL Server tidak ditemukan. "
+            f"Driver yang tersedia: {available_list}. "
+            f"Silakan install 'ODBC Driver 17 for SQL Server' dari: "
+            f"https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server"
+        )
+    except Exception as e:
+        if "ODBC Driver" in str(e):
+            raise e
+        raise Exception(f"Error checking ODBC drivers: {str(e)}")
+
+# Helper function to create connection string with driver detection
+def create_sql_server_connection_string(server, database, username, password, timeout=30, mars_connection=False):
+    """
+    Create SQL Server connection string with automatic driver detection.
+    """
+    driver = get_odbc_driver()
+    
+    connection_string = f'DRIVER={{{driver}}};SERVER={server};DATABASE={database};UID={username};PWD={password}'
+    
+    if timeout:
+        connection_string += f';TIMEOUT={timeout}'
+    
+    if mars_connection:
+        connection_string += ';Mars_Connection=yes'
+    
+    return connection_string
+
 query_bp = Blueprint('query', __name__)
 
 @query_bp.route('/', methods=['GET'])
@@ -1715,8 +1771,19 @@ def get_monitoring_order_data_internal():
         else:
             # Create connection to SQL Server with timeout and network optimizations
             # Mars_Connection=yes helps with network issues and packet duplicates
-            connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password};TIMEOUT=55;Mars_Connection=yes'
-            conn = pyodbc.connect(connection_string)
+            try:
+                connection_string = create_sql_server_connection_string(
+                    server, database, username, password, timeout=55, mars_connection=True
+                )
+                conn = pyodbc.connect(connection_string)
+            except Exception as driver_error:
+                print(f"ODBC Driver error: {str(driver_error)}")
+                return jsonify({
+                    'status': 'error',
+                    'error': 'Database connection failed',
+                    'message': str(driver_error),
+                    'details': 'ODBC Driver untuk SQL Server tidak ditemukan. Silakan install ODBC Driver 17 for SQL Server.'
+                }), 500
             cursor = conn.cursor()
             
             # Build WHERE clause based on filters
@@ -2462,8 +2529,20 @@ def get_late_sku_data():
         
         else:
             # Create connection to SQL Server
-            connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password};TIMEOUT=30'
-            conn = pyodbc.connect(connection_string)
+            try:
+                connection_string = create_sql_server_connection_string(
+                    server, database, username, password, timeout=30
+                )
+                conn = pyodbc.connect(connection_string)
+            except Exception as driver_error:
+                print(f"ODBC Driver error in late-sku: {str(driver_error)}")
+                return jsonify({
+                    'status': 'error',
+                    'error': 'Database connection failed',
+                    'message': str(driver_error),
+                    'details': 'ODBC Driver untuk SQL Server tidak ditemukan. Silakan install ODBC Driver 17 for SQL Server.'
+                }), 500
+            
             cursor = conn.cursor()
             
             # Execute the SKU Telat Masuk query
@@ -2557,8 +2636,20 @@ def get_invalid_sku_data():
         
         else:
             # Create connection to SQL Server
-            connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password};TIMEOUT=30'
-            conn = pyodbc.connect(connection_string)
+            try:
+                connection_string = create_sql_server_connection_string(
+                    server, database, username, password, timeout=30
+                )
+                conn = pyodbc.connect(connection_string)
+            except Exception as driver_error:
+                print(f"ODBC Driver error in invalid-sku: {str(driver_error)}")
+                return jsonify({
+                    'status': 'error',
+                    'error': 'Database connection failed',
+                    'message': str(driver_error),
+                    'details': 'ODBC Driver untuk SQL Server tidak ditemukan. Silakan install ODBC Driver 17 for SQL Server.'
+                }), 500
+            
             cursor = conn.cursor()
             
             # Execute the Invalid SKU query
@@ -2641,8 +2732,20 @@ def get_duplicate_orders_data():
         
         else:
             # Create connection to SQL Server
-            connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password};TIMEOUT=30'
-            conn = pyodbc.connect(connection_string)
+            try:
+                connection_string = create_sql_server_connection_string(
+                    server, database, username, password, timeout=30
+                )
+                conn = pyodbc.connect(connection_string)
+            except Exception as driver_error:
+                print(f"ODBC Driver error in duplicate-orders: {str(driver_error)}")
+                return jsonify({
+                    'status': 'error',
+                    'error': 'Database connection failed',
+                    'message': str(driver_error),
+                    'details': 'ODBC Driver untuk SQL Server tidak ditemukan. Silakan install ODBC Driver 17 for SQL Server.'
+                }), 500
+            
             cursor = conn.cursor()
             
             # Execute the Order Duplikat query
