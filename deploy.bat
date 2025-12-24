@@ -1,8 +1,15 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Script deployment untuk aplikasi di Windows
+:: Script deployment untuk aplikasi QiuLab di Windows
 :: Penggunaan: deploy.bat [dev|prod]
+:: Author: Handiyan Juansah
+
+echo ========================================
+echo   QiuLab Deployment Script
+echo   Version: 2.0
+echo ========================================
+echo.
 
 :: Default ke mode development jika tidak ada argumen
 set MODE=dev
@@ -27,14 +34,10 @@ if not exist "frontend" (
     exit /b 1
 )
 
-:: Simpan path root project (mengantisipasi path dengan spasi)
-set "ROOT_DIR=%~dp0"
-if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
-
 :: 1. Setup Backend
 echo [INFO] Memulai setup backend...
 
-cd /d "%ROOT_DIR%\backend"
+cd backend
 
 :: Verifikasi Python tersedia
 where python >nul 2>nul
@@ -46,7 +49,7 @@ if %ERRORLEVEL% neq 0 (
 :: Setup virtual environment jika belum ada
 if not exist "venv" (
     echo [INFO] Membuat virtual environment...
-    python -m venv "venv"
+    python -m venv venv
     if %ERRORLEVEL% neq 0 (
         echo [ERROR] Gagal membuat virtual environment
         exit /b 1
@@ -56,35 +59,38 @@ if not exist "venv" (
 
 :: Aktifkan virtual environment
 echo [INFO] Mengaktifkan virtual environment...
-call "venv\Scripts\activate.bat"
+call venv\Scripts\activate
 
 :: Install dependensi
 echo [INFO] Menginstal dependensi backend...
-pip install -r "requirements.txt"
+pip install -r requirements.txt
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Gagal menginstal dependensi backend
     exit /b 1
 )
 echo [SUCCESS] Dependensi backend berhasil diinstal
 
-:: Install dependensi tambahan untuk deployment production
-if "%MODE%"=="prod" (
-    echo [INFO] Menginstal dependensi tambahan untuk production...
+:: Verifikasi dependensi penting sudah terinstall
+echo [INFO] Memverifikasi dependensi penting...
+pip show waitress >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo [WARNING] Waitress tidak ditemukan, menginstal...
     pip install waitress
-    if %ERRORLEVEL% neq 0 (
-        echo [ERROR] Gagal menginstal dependensi tambahan
-        exit /b 1
-    )
-    echo [SUCCESS] Dependensi tambahan untuk production berhasil diinstal
 )
+pip show pyodbc >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo [WARNING] pyodbc tidak ditemukan, menginstal...
+    pip install pyodbc
+)
+echo [SUCCESS] Verifikasi dependensi selesai
 
 :: Kembali ke direktori root
-cd /d "%ROOT_DIR%"
+cd ..
 
 :: 2. Setup Frontend
 echo [INFO] Memulai setup frontend...
 
-cd /d "%ROOT_DIR%\frontend"
+cd frontend
 
 :: Verifikasi Node.js tersedia
 where npm >nul 2>nul
@@ -114,45 +120,69 @@ if "%MODE%"=="prod" (
 )
 
 :: Kembali ke direktori root
-cd /d "%ROOT_DIR%"
+cd ..
 
 :: 3. Jalankan aplikasi sesuai mode
 if "%MODE%"=="dev" (
     :: Mode Development: Jalankan backend dan frontend dalam console terpisah
     echo [INFO] Memulai aplikasi dalam mode DEVELOPMENT...
+    echo.
     
     :: Jalankan backend dalam console terpisah
-    echo [INFO] Memulai backend di http://localhost:5000...
-    set "BACKEND_CMD=cd /d \"!ROOT_DIR!\backend\" && call \"venv\Scripts\activate.bat\" && python run_dev.py"
-    start "Backend Server" cmd /k "!BACKEND_CMD!"
+    echo [INFO] Memulai backend development server...
+    echo [INFO] Backend akan berjalan di http://localhost:5000
+    start "Backend Server (Dev)" cmd /k "cd backend && call venv\Scripts\activate && python run_dev.py"
+    
+    :: Tunggu sebentar agar backend sempat start
+    timeout /t 3 /nobreak >nul
     
     :: Jalankan frontend dalam console terpisah
-    echo [INFO] Memulai frontend di http://localhost:3000...
-    set "FRONTEND_CMD=cd /d \"!ROOT_DIR!\frontend\" && npm run dev:network"
-    start "Frontend Server" cmd /k "!FRONTEND_CMD!"
+    echo [INFO] Memulai frontend development server...
+    echo [INFO] Frontend akan berjalan di http://localhost:3000
+    start "Frontend Server (Dev)" cmd /k "cd frontend && npm run dev:network"
     
-    echo [SUCCESS] Mode development dijalankan. Buka browser di http://localhost:3000
+    echo.
+    echo [SUCCESS] Mode development dijalankan!
+    echo [INFO] Backend: http://localhost:5000
+    echo [INFO] Frontend: http://localhost:3000
     echo [INFO] Tekan Ctrl+C pada masing-masing console untuk menghentikan server
+    echo.
     
 ) else (
     :: Mode Production: Jalankan backend dan hasil build frontend
     echo [INFO] Memulai aplikasi dalam mode PRODUCTION...
+    echo.
     
     :: Jalankan backend dalam console terpisah
     echo [INFO] Memulai backend production server...
-    set "BACKEND_CMD=cd /d \"!ROOT_DIR!\backend\" && call \"venv\Scripts\activate.bat\" && python run_prod.py"
-    start "Production Backend" cmd /k "!BACKEND_CMD!"
+    echo [INFO] Backend akan berjalan di http://localhost:5000
+    start "Production Backend" cmd /k "cd backend && call venv\Scripts\activate && python run_prod.py"
+    
+    :: Tunggu sebentar agar backend sempat start
+    timeout /t 3 /nobreak >nul
     
     :: Jalankan frontend (hasil build) dalam console terpisah
     echo [INFO] Memulai frontend production server...
-    set "FRONTEND_CMD=cd /d \"!ROOT_DIR!\frontend\" && npm run preview:network"
-    start "Production Frontend" cmd /k "!FRONTEND_CMD!"
+    echo [INFO] Frontend akan berjalan di http://localhost:4173
+    start "Production Frontend" cmd /k "cd frontend && npm run preview:network"
     
-    echo [SUCCESS] Mode production dijalankan. Buka browser di http://localhost:4173
+    echo.
+    echo [SUCCESS] Mode production dijalankan!
+    echo [INFO] Backend: http://localhost:5000
+    echo [INFO] Frontend: http://localhost:4173
     echo [INFO] Tekan Ctrl+C pada masing-masing console untuk menghentikan server
+    echo.
 )
 
-echo [SUCCESS] Setup deployment selesai!
+echo.
+echo ========================================
+echo   Deployment Setup Selesai!
+echo ========================================
 echo [INFO] Gunakan alamat IP jaringan lokal untuk mengakses dari perangkat lain.
+echo [INFO] Pastikan firewall mengizinkan port 3000 (dev) atau 4173 (prod) untuk frontend
+echo [INFO] Pastikan firewall mengizinkan port 5000 untuk backend
+echo.
+echo [TIP] Untuk menghentikan server, tutup window console yang sesuai
+echo.
 
 endlocal 

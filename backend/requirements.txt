@@ -24,3 +24,6 @@ gunicorn==21.2.0
 
 # Additional
 eventlet==0.33.3
+
+# Note: Pastikan ODBC Driver 17 for SQL Server sudah terinstall untuk koneksi ke SQL Server
+# Download dari: https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server
