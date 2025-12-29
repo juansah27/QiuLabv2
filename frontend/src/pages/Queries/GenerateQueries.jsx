@@ -15,18 +15,18 @@ const GenerateQueries = () => {
   // Menambahkan judul halaman
   usePageTitle('Generate Query');
 
-  // Helper function to get yesterday's date in YYYY-MM-DD format
-  const getYesterdayDate = () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+  // Helper function to get date offset from today in YYYY-MM-DD format
+  const getDateOffset = (daysOffset) => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysOffset);
+    return date.toISOString().split('T')[0];
   };
 
   const [selectedGroup, setSelectedGroup] = useState('query_in_custom');
   const [ids, setIds] = useState('');
   const [yardLoc, setYardLoc] = useState('');
   const [marketplace, setMarketplace] = useState('');
-  const [targetDate, setTargetDate] = useState(getYesterdayDate());
+  const [targetDate, setTargetDate] = useState(getDateOffset(-5));
   const [skuLama, setSkuLama] = useState('');
   const [skuBaru, setSkuBaru] = useState('');
   const [generatedSql, setGeneratedSql] = useState('');
