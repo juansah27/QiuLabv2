@@ -25,29 +25,52 @@ SET SLOT = NULL
 WHERE ORDNUM IN ({IDS});`,
 
   // Validasi Bundle
-  validasi_bundle: `-- 10.6.0.6\\newjda
-SELECT 
-    MainSKU AS SKUBundle, 
-    BOMSKU AS SKUComponent, 
-    BOMQty AS Quantity, 
-    shop_name AS Brand, 
-    marketplace_name AS SalesChannel, 
-    StartDate, 
-    EndDate, 
-    CheckBundle, 
-    ID, 
-    CreatedBy,
-    CreatedDate
-FROM Flexo_db_view.dbo.View_Sys_BOM 
-WHERE MainSKU IN ({IDS})
-  AND EndDate > GETDATE();
+  validasi_bundle: `SELECT
+    v.MainSKU      AS SKUBundle,
+    v.BOMSKU       AS SKUComponent,
+    v.BOMQty       AS Quantity,
+    v.shop_name    AS Brand,
+    STRING_AGG(v.marketplace_name, ', ') AS SalesChannel,
+    MIN(v.StartDate) AS StartDate,
+    v.EndDate,
+    v.CheckBundle,
+    MIN(v.ID)        AS ID,
+    MAX(v.CreatedBy) AS CreatedBy,
+    v.CreatedDate
+FROM (
+    SELECT DISTINCT
+        MainSKU,
+        BOMSKU,
+        BOMQty,
+        shop_name,
+        marketplace_name,
+        StartDate,
+        EndDate,
+        CheckBundle,
+        ID,
+        CreatedBy,
+        CreatedDate
+    FROM Flexo_db_view.dbo.View_Sys_BOM
+    WHERE MainSKU IN ({IDS})
+      AND EndDate >= GETDATE()
+) v
+GROUP BY
+    v.MainSKU,
+    v.BOMSKU,
+    v.BOMQty,
+    v.shop_name,
+    v.EndDate,
+    v.CreatedDate,
+    v.CheckBundle
+ORDER BY ID ASC;
 
 -- CEK SUDAH ADA ORDER BELUM
-SELECT so.PartnerId, so.SystemRefId AS OrderNumber, sol.ItemId AS SKUBundle 
+SELECT so.PartnerId, so.SystemRefId AS OrderNumber, sol.ItemId AS SKUBundle, so.OrderDate
 FROM Flexo_Db.dbo.SalesOrderLine sol
 LEFT JOIN Flexo_Db.dbo.SalesOrder so
     ON so.SystemRefId = sol.SystemRefId
-WHERE ItemId IN ({IDS});`,
+WHERE ItemId IN ({IDS})
+ORDER BY so.OrderDate DESC;`,
 
   // Validasi Supplementary
   validasi_supplementary: `SELECT ItemID AS MainSKU, Supplementary AS GiftSKU, SupplementaryQty, StartDate, EndDate, marketplace_name AS MarketPlace, shop_name AS Brand, CreatedBy, CreatedAt, id  FROM Flexo_db_view.dbo.View_Supplement where 
