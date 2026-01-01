@@ -273,7 +273,11 @@ def run_exe_parallel(brand_folder):
     
     # Windows UNC path workaround: use pushd to map temporary drive
     # pushd automatically maps UNC to temp drive letter, popd unmaps it
+    # Use bash for Linux compatibility (pushd is bash builtin, not available in /bin/sh)
     cmd = f'pushd "{brand_folder}" && Desty.Console.exe && popd'
+    
+    # Use bash if available (for Linux), otherwise use default shell (Windows)
+    executable = '/bin/bash' if os.path.exists('/bin/bash') else None
     
     p = subprocess.Popen(
         cmd,
@@ -282,7 +286,8 @@ def run_exe_parallel(brand_folder):
         text=True,
         encoding='utf-8',
         errors='replace',
-        shell=True
+        shell=True,
+        executable=executable
     )
     processes.append((p, brand_folder.name))
 
