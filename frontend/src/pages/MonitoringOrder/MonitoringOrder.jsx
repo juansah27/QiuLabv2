@@ -1142,9 +1142,10 @@ const MonitoringOrder = () => {
       const token = localStorage.getItem('token');
       
       // Build query parameters - minimal data for cards only
+      // Reduced per_page for better performance on Linux server
       const params = new URLSearchParams({
         page: '1',
-        per_page: '50000', // Reduced for faster cards loading
+        per_page: '10000', // Reduced to 10k for faster cards loading (backend will limit to 10k max for Linux)
         limit: '50000'    // Limit for cards
       });
       
@@ -1214,8 +1215,8 @@ const MonitoringOrder = () => {
       // Reduced per_page for better performance on Linux server
       const params = new URLSearchParams({
         page: '1',
-        per_page: '50000', // Reduced from 100k for better Linux performance
-        limit: '500000'    // Reduced from 1M for better Linux performance
+        per_page: '10000', // Reduced to 10k (backend will limit to 10k max for Linux)
+        limit: '100000'    // Reduced limit for better Linux performance
       });
       
       // Add filters if they exist
