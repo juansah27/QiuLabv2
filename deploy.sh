@@ -80,6 +80,18 @@ install_dependencies() {
   # Install essential packages
   run_command sudo apt install -y python3-venv python3-full python3-dev build-essential unixodbc-dev
   
+  # Install cifs-utils untuk mount network share (untuk Get-Order)
+  if ! command -v mount.cifs &> /dev/null; then
+    print_message "Installing cifs-utils for network share mounting..."
+    run_command sudo apt install -y cifs-utils
+  fi
+  
+  # Install smbclient untuk check network shares
+  if ! command -v smbclient &> /dev/null; then
+    print_message "Installing smbclient..."
+    run_command sudo apt install -y smbclient
+  fi
+  
   # Install tmux if not available
   if ! command -v tmux &> /dev/null; then
     print_message "Installing tmux..."
@@ -91,6 +103,93 @@ install_dependencies() {
     print_message "Installing Node.js..."
     curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
     run_command sudo apt-get install -y nodejs
+  fi
+}
+
+# Function untuk setup mount points untuk Get-Order
+setup_mount_points() {
+  print_message "Setting up mount points for Get-Order..."
+  
+  # Buat mount points jika belum ada
+  if [ ! -d "/mnt/share2" ]; then
+    print_message "Creating mount point: /mnt/share2"
+    run_command sudo mkdir -p /mnt/share2
+    sudo chown -R $USER:$USER /mnt/share2 2>/dev/null || true
+  fi
+  
+  if [ ! -d "/mnt/jubelio" ]; then
+    print_message "Creating mount point: /mnt/jubelio"
+    run_command sudo mkdir -p /mnt/jubelio
+    sudo chown -R $USER:$USER /mnt/jubelio 2>/dev/null || true
+  fi
+  
+  # Check apakah network share sudah ter-mount
+  if mountpoint -q /mnt/share2; then
+    print_success "Network share /mnt/share2 is already mounted"
+  else
+    print_warning "Network share /mnt/share2 is NOT mounted"
+    print_message "To mount manually, run:"
+    print_message "  sudo mount -t cifs //10.6.12.146/Manual /mnt/share2 -o username=USER,password=PASS,uid=\$(id -u),gid=\$(id -g),iocharset=utf8,file_mode=0777,dir_mode=0777"
+  fi
+  
+  if mountpoint -q /mnt/jubelio; then
+    print_success "Network share /mnt/jubelio is already mounted"
+  else
+    print_warning "Network share /mnt/jubelio is NOT mounted"
+    print_message "To mount manually, run:"
+    print_message "  sudo mount -t cifs //10.6.12.174/JubelioJob /mnt/jubelio -o username=USER,password=PASS,uid=\$(id -u),gid=\$(id -g),iocharset=utf8,file_mode=0777,dir_mode=0777"
+  fi
+}
+
+# Function untuk check environment variables untuk Get-Order
+check_get_order_env() {
+  print_message "Checking Get-Order environment variables..."
+  
+  # Check if .env file exists in backend
+  if [ -f "backend/.env" ]; then
+    print_message "Found backend/.env file (will be loaded by Flask)"
+    # Note: We don't source .env here as it might have different format, Flask will handle it
+  fi
+  
+  MISSING_VARS=()
+  
+  # Check environment variables (may be in .env or exported in shell)
+  if [ -z "$SHOPEE_BASE_PATH" ] && ! grep -q "SHOPEE_BASE_PATH" backend/.env 2>/dev/null; then
+    MISSING_VARS+=("SHOPEE_BASE_PATH")
+  fi
+  
+  if [ -z "$LAZADA_BASE_PATH" ] && ! grep -q "LAZADA_BASE_PATH" backend/.env 2>/dev/null; then
+    MISSING_VARS+=("LAZADA_BASE_PATH")
+  fi
+  
+  if [ -z "$TIKTOK_BASE_PATH" ] && ! grep -q "TIKTOK_BASE_PATH" backend/.env 2>/dev/null; then
+    MISSING_VARS+=("TIKTOK_BASE_PATH")
+  fi
+  
+  if [ -z "$DESTY_BASE_PATH" ] && ! grep -q "DESTY_BASE_PATH" backend/.env 2>/dev/null; then
+    MISSING_VARS+=("DESTY_BASE_PATH")
+  fi
+  
+  if [ -z "$GINEE_BASE_PATH" ] && ! grep -q "GINEE_BASE_PATH" backend/.env 2>/dev/null; then
+    MISSING_VARS+=("GINEE_BASE_PATH")
+  fi
+  
+  if [ -z "$JUBELIO_BASE_PATH" ] && ! grep -q "JUBELIO_BASE_PATH" backend/.env 2>/dev/null; then
+    MISSING_VARS+=("JUBELIO_BASE_PATH")
+  fi
+  
+  if [ ${#MISSING_VARS[@]} -eq 0 ]; then
+    print_success "Get-Order environment variables are configured"
+  else
+    print_warning "Some Get-Order environment variables are missing: ${MISSING_VARS[*]}"
+    print_message "Configure them in backend/.env file or export in shell:"
+    print_message "  SHOPEE_BASE_PATH=/mnt/share2/SHOPEE/ShopeeManualPerShopV2 ( BRAND )"
+    print_message "  LAZADA_BASE_PATH=/mnt/share2/LAZADA/LazadaGetOrder"
+    print_message "  TIKTOK_BASE_PATH=/mnt/share2/TIKTOK/GetOrderTiktok"
+    print_message "  DESTY_BASE_PATH=/mnt/share2/DESTY/DestyGetOrder"
+    print_message "  GINEE_BASE_PATH=/mnt/share2/GINEE"
+    print_message "  JUBELIO_BASE_PATH=/mnt/jubelio/JubelioManual"
+    print_message "See DEPLOY_LINUX_GET_ORDER.md for detailed instructions"
   fi
 }
 
@@ -256,6 +355,12 @@ main() {
   # Install dependencies
   install_dependencies
   check_result "System dependencies installed" "Failed to install system dependencies"
+  
+  # Setup mount points for Get-Order
+  setup_mount_points
+  
+  # Check Get-Order environment variables
+  check_get_order_env
   
   # Setup backend
   setup_backend
