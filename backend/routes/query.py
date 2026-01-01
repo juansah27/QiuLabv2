@@ -1867,16 +1867,24 @@ def get_monitoring_order_data_internal():
             cursor.execute(count_query, params)
             total_count = cursor.fetchone()[0]
             
-            # For dashboard, we want to get all data if possible, but with reasonable limits
-            # Reduce limit for Linux to improve performance
-            max_records_for_all = 300000 if system == "Linux" else 500000
+            # For dashboard, limit maximum per_page to prevent timeout
+            # Linux: max 10k per page (better for network performance)
+            # Windows: max 20k per page
+            max_per_page = 10000 if system == "Linux" else 20000
             
-            if total_count <= max_records_for_all:
-                # Get all data in one request for better dashboard performance
-                per_page = total_count
+            # Don't fetch all data at once, use pagination with reasonable limits
+            if per_page > max_per_page:
+                per_page = max_per_page
+            
+            # Calculate total pages based on limited per_page
+            if total_count > limit:
+                total_count = limit
+            
+            total_pages = (total_count + per_page - 1) // per_page
+            
+            # Ensure offset is within bounds
+            if offset >= total_count:
                 offset = 0
-                total_pages = 1
-            else:
                 # Use pagination for very large datasets
                 if total_count > limit:
                     total_count = limit
