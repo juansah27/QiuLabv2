@@ -1868,9 +1868,9 @@ def get_monitoring_order_data_internal():
             total_count = cursor.fetchone()[0]
             
             # For dashboard, limit maximum per_page to prevent timeout
-            # Linux: max 10k per page (better for network performance)
-            # Windows: max 20k per page
-            max_per_page = 10000 if system == "Linux" else 20000
+            # Linux: max 20k per page (increased from 10k for better data coverage)
+            # Windows: max 50k per page
+            max_per_page = 20000 if system == "Linux" else 50000
             
             # Don't fetch all data at once, use pagination with reasonable limits
             if per_page > max_per_page:
