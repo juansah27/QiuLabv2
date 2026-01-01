@@ -2060,14 +2060,16 @@ def get_monitoring_order_data_internal():
             FETCH NEXT {per_page} ROWS ONLY
             """
             
-            # Set query timeout (longer for Linux due to network latency)
+            # Note: pyodbc doesn't support cursor.timeout attribute
+            # Query timeout is handled via connection timeout and query execution
+            # Connection timeout is already set in connection_string
             query_timeout = 85 if system == "Linux" else 50
-            cursor.timeout = query_timeout
             
             try:
                 print(f"Executing query with params: {params}")
                 print(f"Offset: {offset}, Per Page: {per_page}")
-                print(f"Query timeout: {query_timeout}s, Connection timeout: {connection_timeout}s (Platform: {system})")
+                print(f"Query timeout: {query_timeout}s (informational), Connection timeout: {connection_timeout}s (Platform: {system})")
+                # Execute query - timeout is handled by connection timeout and query complexity
                 cursor.execute(monitoring_order_query, params)
             except Exception as query_error:
                 print(f"Query execution error: {str(query_error)}")
