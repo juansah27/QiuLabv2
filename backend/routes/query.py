@@ -2141,7 +2141,6 @@ def get_monitoring_order_data_internal():
                     'brand': brand,
                     'marketplace': marketplace
                 },
-                'data_source': 'sql_server',
                 'performance': {
                     'records_returned': len(results),
                     'compression_enabled': True,
@@ -2152,13 +2151,15 @@ def get_monitoring_order_data_internal():
             return jsonify(response_data), 200
             
     except Exception as e:
-        print(f"Error in get_monitoring_order_data: {str(e)}")
         import traceback
-        traceback.print_exc()
+        error_trace = traceback.format_exc()
+        print(f"Error in get_monitoring_order_data: {str(e)}")
+        print(f"Full traceback:\n{error_trace}")
         return jsonify({
             'status': 'error',
             'error': 'Gagal mengambil data monitoring order',
-            'details': str(e)
+            'details': str(e),
+            'error_type': type(e).__name__
         }), 500
 
 @query_bp.route('/monitoring-unified', methods=['POST'])
