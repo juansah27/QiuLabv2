@@ -2125,6 +2125,7 @@ def get_monitoring_order_data_internal():
             response_data = {
                 'status': 'success',
                 'data': results,
+                'data_source': 'sql_server',  # Always indicate real SQL Server data
                 'pagination': {
                     'page': page,
                     'per_page': per_page,

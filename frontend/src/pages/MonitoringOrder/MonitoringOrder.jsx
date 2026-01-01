@@ -1154,9 +1154,10 @@ const MonitoringOrder = () => {
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.marketplace) params.append('marketplace', filters.marketplace);
       
-      // Timeout 60 seconds for cards (faster)
+      // Timeout 120 seconds for cards (increased for Linux server performance)
+      // Backend query timeout is 85s for Linux, so we need longer frontend timeout
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 60 seconds')), 60000);
+        setTimeout(() => reject(new Error('Request timeout after 120 seconds')), 120000);
       });
       
       const fetchPromise = fetch(`/api/query/monitoring-order?${params.toString()}`, {
@@ -1579,54 +1580,54 @@ const MonitoringOrder = () => {
             </>
           ) : (
             <>
-              <StatCard 
-                title="Total Orders" 
-                value={data.cards.totalOrder} 
-                icon={ChartBarIcon} 
-                color="blue" 
-                loading={loadingCards}
-                onClick={() => handleCardClick('totalOrder')}
-              />
-              <StatCard 
-                title="Interfaced" 
-                value={data.cards.totalOrderInterface} 
-                icon={CheckCircleIcon} 
-                color="green" 
-                loading={loadingCards}
-                onClick={() => handleCardClick('totalOrderInterface')}
-              />
-              <StatCard 
-                title="Not Interfaced" 
-                value={data.cards.totalOrderNotYetInterface} 
-                icon={XCircleIcon} 
-                color="red" 
-                loading={loadingCards}
-                onClick={() => handleCardClick('totalOrderNotYetInterface')}
-              />
-              <StatCard 
-                title="Pending Verification" 
-                value={data.cards.totalOrderPendingVerifikasi} 
-                icon={ClockIcon} 
-                color="yellow" 
-                loading={loadingCards}
-                onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
-              />
-              <StatCard 
-                title=" > 1 Hour" 
-                value={data.cards.totalOrderLebihDari1Jam} 
-                icon={ArrowTrendingUpIcon} 
-                color="orange" 
-                loading={loadingCards}
-                onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
-              />
-              <StatCard 
-                title=" < 1 Hour" 
-                value={data.cards.totalOrderKurangDari1Jam} 
-                icon={ArrowTrendingDownIcon} 
-                color="purple" 
-                loading={loadingCards}
-                onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
-              />
+          <StatCard 
+            title="Total Orders" 
+            value={data.cards.totalOrder} 
+            icon={ChartBarIcon} 
+            color="blue" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrder')}
+          />
+          <StatCard 
+            title="Interfaced" 
+            value={data.cards.totalOrderInterface} 
+            icon={CheckCircleIcon} 
+            color="green" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderInterface')}
+          />
+          <StatCard 
+            title="Not Interfaced" 
+            value={data.cards.totalOrderNotYetInterface} 
+            icon={XCircleIcon} 
+            color="red" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderNotYetInterface')}
+          />
+          <StatCard 
+            title="Pending Verification" 
+            value={data.cards.totalOrderPendingVerifikasi} 
+            icon={ClockIcon} 
+            color="yellow" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
+          />
+          <StatCard 
+            title=" > 1 Hour" 
+            value={data.cards.totalOrderLebihDari1Jam} 
+            icon={ArrowTrendingUpIcon} 
+            color="orange" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
+          />
+          <StatCard 
+            title=" < 1 Hour" 
+            value={data.cards.totalOrderKurangDari1Jam} 
+            icon={ArrowTrendingDownIcon} 
+            color="purple" 
+            loading={loadingCards}
+            onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
+          />
             </>
           )}
         </div>
@@ -2004,65 +2005,65 @@ const MonitoringOrder = () => {
             </>
           ) : (
             <>
-              {/* SKU Telat Masuk */}
-              <StatCard
-                title="SKU Telat Masuk"
-                value={lateSkuData.length}
-                icon={ExclamationTriangleIcon}
-                color="red"
-                loading={loadingAdditionalData}
-                onClick={() => {
-                  // Limit display to 10k, but keep full data for copying
-                  const limitedLateSku = lateSkuData.slice(0, 10000);
-                  setModalState({
-                    isOpen: true,
-                    title: `SKU Telat Masuk Details${lateSkuData.length > 10000 ? ` (Showing first 10,000 of ${lateSkuData.length.toLocaleString()})` : ''}`,
-                    data: limitedLateSku,
-                    fullData: lateSkuData,
-                    loading: false
-                  });
-                }}
-              />
+          {/* SKU Telat Masuk */}
+          <StatCard
+            title="SKU Telat Masuk"
+            value={lateSkuData.length}
+            icon={ExclamationTriangleIcon}
+            color="red"
+            loading={loadingAdditionalData}
+            onClick={() => {
+              // Limit display to 10k, but keep full data for copying
+              const limitedLateSku = lateSkuData.slice(0, 10000);
+              setModalState({
+                isOpen: true,
+                title: `SKU Telat Masuk Details${lateSkuData.length > 10000 ? ` (Showing first 10,000 of ${lateSkuData.length.toLocaleString()})` : ''}`,
+                data: limitedLateSku,
+                fullData: lateSkuData,
+                loading: false
+              });
+            }}
+          />
 
-              {/* Invalid SKU */}
-              <StatCard
-                title="Invalid SKU"
-                value={invalidSkuData.length}
-                icon={XCircleIcon}
-                color="orange"
-                loading={loadingAdditionalData}
-                onClick={() => {
-                  // Limit display to 10k, but keep full data for copying
-                  const limitedInvalidSku = invalidSkuData.slice(0, 10000);
-                  setModalState({
-                    isOpen: true,
-                    title: `Invalid SKU Details${invalidSkuData.length > 10000 ? ` (Showing first 10,000 of ${invalidSkuData.length.toLocaleString()})` : ''}`,
-                    data: limitedInvalidSku,
-                    fullData: invalidSkuData,
-                    loading: false
-                  });
-                }}
-              />
+          {/* Invalid SKU */}
+          <StatCard
+            title="Invalid SKU"
+            value={invalidSkuData.length}
+            icon={XCircleIcon}
+            color="orange"
+            loading={loadingAdditionalData}
+            onClick={() => {
+              // Limit display to 10k, but keep full data for copying
+              const limitedInvalidSku = invalidSkuData.slice(0, 10000);
+              setModalState({
+                isOpen: true,
+                title: `Invalid SKU Details${invalidSkuData.length > 10000 ? ` (Showing first 10,000 of ${invalidSkuData.length.toLocaleString()})` : ''}`,
+                data: limitedInvalidSku,
+                fullData: invalidSkuData,
+                loading: false
+              });
+            }}
+          />
 
-              {/* Order Duplikat */}
-              <StatCard
-                title="Order Duplikat"
-                value={duplicateOrderData.length}
-                icon={ClipboardDocumentIcon}
-                color="purple"
-                loading={loadingAdditionalData}
-                onClick={() => {
-                  // Limit display to 10k, but keep full data for copying
-                  const limitedDuplicate = duplicateOrderData.slice(0, 10000);
-                  setModalState({
-                    isOpen: true,
-                    title: `Order Duplikat Details${duplicateOrderData.length > 10000 ? ` (Showing first 10,000 of ${duplicateOrderData.length.toLocaleString()})` : ''}`,
-                    data: limitedDuplicate,
-                    fullData: duplicateOrderData,
-                    loading: false
-                  });
-                }}
-              />
+          {/* Order Duplikat */}
+          <StatCard
+            title="Order Duplikat"
+            value={duplicateOrderData.length}
+            icon={ClipboardDocumentIcon}
+            color="purple"
+            loading={loadingAdditionalData}
+            onClick={() => {
+              // Limit display to 10k, but keep full data for copying
+              const limitedDuplicate = duplicateOrderData.slice(0, 10000);
+              setModalState({
+                isOpen: true,
+                title: `Order Duplikat Details${duplicateOrderData.length > 10000 ? ` (Showing first 10,000 of ${duplicateOrderData.length.toLocaleString()})` : ''}`,
+                data: limitedDuplicate,
+                fullData: duplicateOrderData,
+                loading: false
+              });
+            }}
+          />
             </>
           )}
         </div>
