@@ -2069,11 +2069,19 @@ def get_monitoring_order_data_internal():
             query_timeout = 85 if system == "Linux" else 50
             
             try:
+                import time
+                import pyodbc as pyodbc_module
                 print(f"Executing query with params: {params}")
                 print(f"Offset: {offset}, Per Page: {per_page}")
                 print(f"Query timeout: {query_timeout}s (informational), Connection timeout: {connection_timeout}s (Platform: {system})")
+                print(f"pyodbc version: {pyodbc_module.version}")
+                print(f"Python version: {__import__('sys').version}")
+                
+                start_time = time.time()
                 # Execute query - timeout is handled by connection timeout and query complexity
                 cursor.execute(monitoring_order_query, params)
+                query_execution_time = time.time() - start_time
+                print(f"Query execution time: {query_execution_time:.2f} seconds")
             except Exception as query_error:
                 print(f"Query execution error: {str(query_error)}")
                 print(f"Query: {monitoring_order_query}")
