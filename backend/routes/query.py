@@ -1850,17 +1850,12 @@ def get_monitoring_order_data_internal():
             
             where_clause = " AND ".join(where_conditions)
             
-            # Get total count first for pagination info
+            # Get total count first for pagination info - optimized: remove unnecessary LEFT JOIN
             count_query = f"""
-            SELECT COUNT(*) as total_count
-            FROM (
-                SELECT DISTINCT so.SystemRefId
-                FROM Flexo_Db.dbo.SalesOrder AS so WITH (NOLOCK)
-                LEFT JOIN WMSPROD.dbo.ord_line AS ord WITH (NOLOCK)
-                    ON so.SystemRefId = ord.ordnum
-                WHERE {where_clause}
-                AND so.FulfilledByFlexo <> '0'
-            ) AS count_cte
+            SELECT COUNT(DISTINCT so.SystemRefId) as total_count
+            FROM Flexo_Db.dbo.SalesOrder AS so WITH (NOLOCK)
+            WHERE {where_clause}
+            AND so.FulfilledByFlexo <> '0'
             """
             
             # Execute count query
