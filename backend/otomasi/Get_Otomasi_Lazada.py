@@ -24,6 +24,10 @@ def load_orders(filepath):
         parts = line.strip().split('\t')
         if len(parts) == 2:
             brand, full_order = parts
+            brand_upper = brand.strip().upper()
+            # FINALLY FOUND YOU hanya diproses di Jubelio, bukan Lazada
+            if brand_upper == 'FINALLY FOUND YOU':
+                continue
             token_upper = full_order.strip().upper()
             if not (token_upper.startswith('LZ') or token_upper.startswith('264') or token_upper.startswith('273')):
                 continue

@@ -62,6 +62,7 @@ def _detect_scripts_from_input(input_text: str):
         if not parts or len(parts) < 2:
             continue
         valid_lines += 1
+        brand_name = parts[0].strip().upper()
         order_token = (
             parts[1]
             .strip()
@@ -79,7 +80,8 @@ def _detect_scripts_from_input(input_text: str):
             or order_token.startswith("1956")
         ):
             flags["Desty"] = True
-        if order_token.startswith("LZ-") or order_token.startswith("264") or order_token.startswith("273"):
+        # FINALLY FOUND YOU hanya di Jubelio, bukan Lazada
+        if (order_token.startswith("LZ-") or order_token.startswith("264") or order_token.startswith("273")) and brand_name != "FINALLY FOUND YOU":
             flags["Lazada"] = True
         if order_token.startswith("SHOPEE") or order_token.startswith("25"):
             flags["Shopee"] = True
@@ -373,6 +375,7 @@ def run_script_legacy():
         parts = line.split("\t")
         if len(parts) < 2:
             continue
+        brand_name = parts[0].strip().upper()
         order_token = parts[1].strip().upper()
         if order_token.startswith("TTS") or order_token.startswith("579"):
             flags["Tiktok"] = True
@@ -383,7 +386,8 @@ def run_script_legacy():
             or order_token.startswith("1956")
         ):
             flags["Desty"] = True
-        if order_token.startswith("LZ-") or order_token.startswith("264") or order_token.startswith("273"):
+        # FINALLY FOUND YOU hanya di Jubelio, bukan Lazada
+        if (order_token.startswith("LZ-") or order_token.startswith("264") or order_token.startswith("273")) and brand_name != "FINALLY FOUND YOU":
             flags["Lazada"] = True
         if order_token.startswith("SHOPEE") or order_token.startswith("25"):
             flags["Shopee"] = True
