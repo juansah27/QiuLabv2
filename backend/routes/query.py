@@ -51,7 +51,9 @@ def get_odbc_driver():
 def create_sql_server_connection_string(server, database, username, password, timeout=30, mars_connection=False):
     """
     Create SQL Server connection string with automatic driver detection.
+    Includes platform-specific optimizations for Linux.
     """
+    import platform
     driver = get_odbc_driver()
     
     connection_string = f'DRIVER={{{driver}}};SERVER={server};DATABASE={database};UID={username};PWD={password}'
@@ -61,6 +63,13 @@ def create_sql_server_connection_string(server, database, username, password, ti
     
     if mars_connection:
         connection_string += ';Mars_Connection=yes'
+    
+    # Linux-specific optimizations for better network performance
+    if platform.system() == "Linux":
+        # Increase packet size for better network performance
+        connection_string += ';Packet Size=4096'
+        # Use TDS protocol version 7.4 (more efficient)
+        connection_string += ';TDS_Version=7.4'
     
     return connection_string
 
@@ -1673,9 +1682,15 @@ def get_monitoring_order_data_internal():
         marketplace = request.args.get('marketplace', '')
         
         # Get pagination parameters with reasonable defaults for network performance
+        # Reduce default per_page for Linux to improve initial load time
+        import platform
+        system = platform.system()
+        default_per_page = 2000 if system == "Linux" else 5000
+        default_limit = 30000 if system == "Linux" else 50000
+        
         page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 5000, type=int)  # Default 5k for better network performance
-        limit = request.args.get('limit', 50000, type=int)  # Default 50k limit
+        per_page = request.args.get('per_page', default_per_page, type=int)
+        limit = request.args.get('limit', default_limit, type=int)
         
         # Validate pagination parameters
         if page < 1:
@@ -1771,9 +1786,12 @@ def get_monitoring_order_data_internal():
         else:
             # Create connection to SQL Server with timeout and network optimizations
             # Mars_Connection=yes helps with network issues and packet duplicates
+            # Increase timeout for Linux due to potential network latency
+            connection_timeout = 90 if system == "Linux" else 55
+            
             try:
                 connection_string = create_sql_server_connection_string(
-                    server, database, username, password, timeout=55, mars_connection=True
+                    server, database, username, password, timeout=connection_timeout, mars_connection=True
                 )
                 conn = pyodbc.connect(connection_string)
             except Exception as driver_error:
@@ -2041,10 +2059,14 @@ def get_monitoring_order_data_internal():
             FETCH NEXT {per_page} ROWS ONLY
             """
             
-            # Set query timeout to 55 seconds (leaving 5 seconds buffer for frontend timeout)
+            # Set query timeout (longer for Linux due to network latency)
+            query_timeout = 85 if system == "Linux" else 50
+            cursor.timeout = query_timeout
+            
             try:
                 print(f"Executing query with params: {params}")
                 print(f"Offset: {offset}, Per Page: {per_page}")
+                print(f"Query timeout: {query_timeout}s, Connection timeout: {connection_timeout}s (Platform: {system})")
                 cursor.execute(monitoring_order_query, params)
             except Exception as query_error:
                 print(f"Query execution error: {str(query_error)}")
