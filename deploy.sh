@@ -92,6 +92,13 @@ install_dependencies() {
     run_command sudo apt install -y smbclient
   fi
   
+  # Install Wine untuk menjalankan .exe files di Linux (untuk Get-Order)
+  if ! command -v wine &> /dev/null; then
+    print_message "Installing Wine for .exe execution on Linux..."
+    print_warning "Wine installation may take some time and require user interaction"
+    run_command sudo apt install -y wine || print_warning "Wine installation failed or skipped. Get-Order .exe files will not execute automatically."
+  fi
+  
   # Install tmux if not available
   if ! command -v tmux &> /dev/null; then
     print_message "Installing tmux..."

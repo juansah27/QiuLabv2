@@ -1,4 +1,5 @@
 import os
+import platform
 import subprocess
 from pathlib import Path
 from path_helper import get_tiktok_path
@@ -61,12 +62,32 @@ def run_exe_parallel(brand_folder):
     if not exe_path.exists():
         print(f"[X] ERROR: tiktok.api.exe tidak ditemukan di: {exe_path}")
         return
-    print(f"[*] INFO: Menjalankan .exe di: {brand_folder}")
-    print(f"[*] Command: tiktok.api.exe")
+    
+    # Check OS and handle .exe execution accordingly
+    system = platform.system()
+    
+    if system == "Linux":
+        # On Linux, .exe files are Windows executables
+        # Try Wine first, if not available, skip execution (orderlist.txt already updated)
+        wine_check = subprocess.run(['which', 'wine'], capture_output=True, text=True)
+        if wine_check.returncode == 0:
+            exe_command = "wine tiktok.api.exe"
+            print(f"[*] INFO: Menjalankan .exe dengan Wine di: {brand_folder}")
+        else:
+            print(f"[!] INFO: Wine tidak ditemukan. Skip menjalankan .exe di Linux.")
+            print(f"[!] orderlist.txt sudah di-update. Jalankan .exe secara manual di Windows server jika diperlukan.")
+            print(f"[!] Install Wine untuk auto-execute: sudo apt install -y wine")
+            return
+    else:
+        # Windows: run directly
+        exe_command = "tiktok.api.exe"
+        print(f"[*] INFO: Menjalankan .exe di: {brand_folder}")
+    
+    print(f"[*] Command: {exe_command}")
     
     # Windows UNC path workaround: use pushd to map temporary drive
     # Use bash for Linux compatibility (pushd is bash builtin, not available in /bin/sh)
-    cmd = f'pushd "{brand_folder}" && tiktok.api.exe && popd'
+    cmd = f'pushd "{brand_folder}" && {exe_command} && popd'
     
     # Use bash if available (for Linux), otherwise use default shell (Windows)
     executable = '/bin/bash' if os.path.exists('/bin/bash') else None
