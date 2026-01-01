@@ -1868,9 +1868,10 @@ def get_monitoring_order_data_internal():
             total_count = cursor.fetchone()[0]
             
             # For dashboard, we want to get all data if possible, but with reasonable limits
-            # If total count is reasonable (< 500k), get all data
-            # If too large, use pagination
-            if total_count <= 500000:
+            # Reduce limit for Linux to improve performance
+            max_records_for_all = 300000 if system == "Linux" else 500000
+            
+            if total_count <= max_records_for_all:
                 # Get all data in one request for better dashboard performance
                 per_page = total_count
                 offset = 0

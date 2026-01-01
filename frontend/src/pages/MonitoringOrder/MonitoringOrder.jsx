@@ -1211,10 +1211,11 @@ const MonitoringOrder = () => {
       const token = localStorage.getItem('token');
       
       // Build query parameters with full data for charts
+      // Reduced per_page for better performance on Linux server
       const params = new URLSearchParams({
         page: '1',
-        per_page: '100000', // Full data for charts
-        limit: '1000000'    // Max 1M records total
+        per_page: '50000', // Reduced from 100k for better Linux performance
+        limit: '500000'    // Reduced from 1M for better Linux performance
       });
       
       // Add filters if they exist
@@ -1223,9 +1224,10 @@ const MonitoringOrder = () => {
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.marketplace) params.append('marketplace', filters.marketplace);
       
-      // Timeout 180 seconds for full data
+      // Timeout 150 seconds for charts data (increased for Linux server)
+      // Backend query timeout is 85s for Linux, need buffer for network latency
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 180 seconds')), 180000);
+        setTimeout(() => reject(new Error('Request timeout after 150 seconds')), 150000);
       });
       
       const fetchPromise = fetch(`/api/query/monitoring-order?${params.toString()}`, {
@@ -1258,7 +1260,10 @@ const MonitoringOrder = () => {
       }
     } catch (err) {
       console.error('Error fetching charts:', err);
-      // Don't set error for charts, just log it
+      // Set error state so user knows charts data failed to load
+      setError(`Charts data failed to load: ${err.message}. Using cards data only.`);
+      // Keep existing cardsData, don't clear rawData if it was previously loaded
+      // Charts will use cardsData as fallback via filteredDataMemo
     } finally {
       setLoadingCharts(false);
     }
