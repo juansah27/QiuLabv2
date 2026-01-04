@@ -1141,9 +1141,11 @@ const MonitoringOrder = () => {
       setError(null);
       const token = localStorage.getItem('token');
       
-      // Build query parameters - no limits, only use filters
+      // Build query parameters - limit data for faster loading
+      // Cards only need summary data, so limit to 5000 records
       const params = new URLSearchParams({
-        page: '1'
+        page: '1',
+        per_page: '5000'  // Limit untuk cards (faster loading)
       });
       
       // Add filters if they exist
@@ -1208,9 +1210,11 @@ const MonitoringOrder = () => {
       setLoadingCharts(true);
       const token = localStorage.getItem('token');
       
-      // Build query parameters - no limits, only use filters
+      // Build query parameters - limit data for faster loading
+      // Charts need more data but still limit to 10000 for performance
       const params = new URLSearchParams({
-        page: '1'
+        page: '1',
+        per_page: '10000'  // Limit untuk charts (balance antara data lengkap dan performance)
       });
       
       // Add filters if they exist

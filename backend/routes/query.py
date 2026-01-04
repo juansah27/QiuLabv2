@@ -66,8 +66,8 @@ def create_sql_server_connection_string(server, database, username, password, ti
     
     # Linux-specific optimizations for better network performance
     if platform.system() == "Linux":
-        # Increase packet size for better network performance
-        connection_string += ';Packet Size=4096'
+        # Increase packet size for better network performance (8192 for large data transfers)
+        connection_string += ';Packet Size=8192'
         # Use TDS protocol version 7.4 (more efficient)
         connection_string += ';TDS_Version=7.4'
     
