@@ -138,8 +138,23 @@ def main():
             except Exception:
                 old_content = None
         if old_content != new_content:
-            with open(orderlist_path, 'w', encoding='utf-8') as f:
-                f.write(new_content)
+            try:
+                # Check if file is read-only and try to make it writable
+                if orderlist_path.exists() and orderlist_path.stat().st_file_attributes & 1:  # FILE_ATTRIBUTE_READONLY
+                    import os
+                    os.chmod(orderlist_path, 0o666)
+                with open(orderlist_path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+                print(f"[OK] orderlist.txt berhasil di-update: {orderlist_path}")
+            except PermissionError as e:
+                print(f"[!] WARNING: Permission denied saat write ke {orderlist_path}")
+                print(f"[!] Pastikan user memiliki permission write ke network share")
+                print(f"[!] Skip folder ini: {brand_folder}")
+                continue
+            except Exception as e:
+                print(f"[!] ERROR: Gagal write orderlist.txt ke {orderlist_path}: {str(e)}")
+                print(f"[!] Skip folder ini: {brand_folder}")
+                continue
         updated_folders.add(brand_folder)
     for folder in updated_folders:
         run_exe_parallel(folder)
