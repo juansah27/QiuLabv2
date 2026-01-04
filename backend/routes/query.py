@@ -1681,27 +1681,18 @@ def get_monitoring_order_data_internal():
         brand = request.args.get('brand', '')
         marketplace = request.args.get('marketplace', '')
         
-        # Get pagination parameters with reasonable defaults for network performance
-        # Reduce default per_page for Linux to improve initial load time
-        import platform
-        system = platform.system()
-        default_per_page = 2000 if system == "Linux" else 5000
-        default_limit = 30000 if system == "Linux" else 50000
-        
+        # Get pagination parameters - no limits, only use filters
         page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', default_per_page, type=int)
-        limit = request.args.get('limit', default_limit, type=int)
+        per_page = request.args.get('per_page', None, type=int)
         
-        # Validate pagination parameters
+        # Validate pagination parameters (minimum validation only)
         if page < 1:
             page = 1
-        if per_page < 1 or per_page > 50000:
-            per_page = 5000
-        if limit < 1 or limit > 200000:
-            limit = 50000
+        if per_page is not None and per_page < 1:
+            per_page = None
         
-        # Calculate offset for pagination
-        offset = (page - 1) * per_page
+        # Calculate offset for pagination (only if per_page is specified)
+        offset = (page - 1) * per_page if per_page else 0
         
         # Load environment variables
         load_dotenv()
@@ -1787,6 +1778,8 @@ def get_monitoring_order_data_internal():
             # Create connection to SQL Server with timeout and network optimizations
             # Mars_Connection=yes helps with network issues and packet duplicates
             # Increase timeout for Linux due to potential network latency
+            import platform
+            system = platform.system()
             connection_timeout = 90 if system == "Linux" else 55
             
             try:
@@ -1862,34 +1855,16 @@ def get_monitoring_order_data_internal():
             cursor.execute(count_query, params)
             total_count = cursor.fetchone()[0]
             
-            # For dashboard, limit maximum per_page to prevent timeout
-            # Linux: max 20k per page (increased from 10k for better data coverage)
-            # Windows: max 50k per page
-            max_per_page = 20000 if system == "Linux" else 50000
-            
-            # Don't fetch all data at once, use pagination with reasonable limits
-            if per_page > max_per_page:
-                per_page = max_per_page
-            
-            # Calculate total pages based on limited per_page
-            if total_count > limit:
-                total_count = limit
-            
-            total_pages = (total_count + per_page - 1) // per_page
-            
-            # Ensure offset is within bounds
-            if offset >= total_count:
-                offset = 0
-                # Use pagination for very large datasets
-                if total_count > limit:
-                    total_count = limit
-                
-                # Calculate total pages
+            # Calculate total pages (only if per_page is specified)
+            if per_page:
                 total_pages = (total_count + per_page - 1) // per_page
-                
                 # Ensure offset is within bounds
                 if offset >= total_count:
                     offset = 0
+            else:
+                # No pagination - fetch all data
+                total_pages = 1
+                offset = 0
             
             # Execute the optimized monitoring order query with pagination
             monitoring_order_query = f"""
@@ -2059,9 +2034,14 @@ def get_monitoring_order_data_internal():
             WHERE {where_clause}
               AND so.FulfilledByFlexo <> '0'
             ORDER BY so.OrderDate DESC
+            """
+            
+            # Add pagination only if per_page is specified
+            if per_page:
+                monitoring_order_query += f"""
             OFFSET {offset} ROWS 
             FETCH NEXT {per_page} ROWS ONLY
-            """
+                """
             
             # Note: pyodbc doesn't support cursor.timeout attribute
             # Query timeout is handled via connection timeout and query execution

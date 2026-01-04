@@ -1141,11 +1141,9 @@ const MonitoringOrder = () => {
       setError(null);
       const token = localStorage.getItem('token');
       
-      // Build query parameters - minimal data for cards only
+      // Build query parameters - no limits, only use filters
       const params = new URLSearchParams({
-        page: '1',
-        per_page: '20000', // Backend will limit to 20k max for Linux (50k for Windows)
-        limit: '100000'    // Higher limit for cards
+        page: '1'
       });
       
       // Add filters if they exist
@@ -1210,11 +1208,9 @@ const MonitoringOrder = () => {
       setLoadingCharts(true);
       const token = localStorage.getItem('token');
       
-      // Build query parameters with full data for charts
+      // Build query parameters - no limits, only use filters
       const params = new URLSearchParams({
-        page: '1',
-        per_page: '20000', // Backend will limit to 20k max for Linux (50k for Windows)
-        limit: '200000'    // Higher limit for charts
+        page: '1'
       });
       
       // Add filters if they exist
