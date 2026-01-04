@@ -1141,11 +1141,11 @@ const MonitoringOrder = () => {
       setError(null);
       const token = localStorage.getItem('token');
       
-      // Build query parameters - limit data for faster loading
-      // Cards only need summary data, so limit to 5000 records
+      // Build query parameters - load all data for accurate cards summary
+      // Backend will fetch all records if per_page is not specified
       const params = new URLSearchParams({
-        page: '1',
-        per_page: '5000'  // Limit untuk cards (faster loading)
+        page: '1'
+        // No per_page = fetch all data for accurate statistics
       });
       
       // Add filters if they exist
@@ -1210,11 +1210,11 @@ const MonitoringOrder = () => {
       setLoadingCharts(true);
       const token = localStorage.getItem('token');
       
-      // Build query parameters - limit data for faster loading
-      // Charts need more data but still limit to 10000 for performance
+      // Build query parameters - load ALL data (no pagination limit)
+      // Backend will fetch all records if per_page is not specified
       const params = new URLSearchParams({
-        page: '1',
-        per_page: '10000'  // Limit untuk charts (balance antara data lengkap dan performance)
+        page: '1'
+        // No per_page = fetch all data
       });
       
       // Add filters if they exist
@@ -1250,7 +1250,13 @@ const MonitoringOrder = () => {
           console.log('Charts API Performance:', result.performance);
         }
         
-        console.log(`Charts data loaded: ${result.data.length} records`);
+        // Log pagination info if available
+        if (result.pagination) {
+          console.log(`Charts data loaded: ${result.data.length} records (Total: ${result.pagination.total_count})`);
+        } else {
+          console.log(`Charts data loaded: ${result.data.length} records`);
+        }
+        
         if (result.data.length > 0) {
           console.log('Sample data:', result.data[0]);
         }
