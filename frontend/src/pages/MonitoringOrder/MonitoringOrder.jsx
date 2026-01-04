@@ -895,8 +895,8 @@ const MonitoringOrder = () => {
   const [modalState, setModalState] = useState({
     isOpen: false,
     title: '',
-    data: [], // Display data (limited to 10k for UI performance)
-    fullData: [], // Full data (for copying up to 50k)
+    data: [], // Display data (all data, no limits)
+    fullData: [], // Full data (same as data, for copying)
     loading: false
   });
   
@@ -1401,14 +1401,12 @@ const MonitoringOrder = () => {
             title = 'Order Details';
         }
         
-        // Limit data to prevent performance issues (show first 10,000 records)
-        const limitedData = modalData.slice(0, 10000);
-        
+        // Show all data, no limits
         setModalState({
           isOpen: true,
-          title: `${title}${modalData.length > 10000 ? ` (Showing first 10,000 of ${modalData.length.toLocaleString()})` : ''}`,
-          data: limitedData, // For display (10k limit)
-          fullData: modalData, // Full data for copying (up to 50k)
+          title: title,
+          data: modalData, // All data for display
+          fullData: modalData, // Full data for copying
           loading: false
         });
       } catch (error) {
@@ -2013,12 +2011,10 @@ const MonitoringOrder = () => {
             color="red"
             loading={loadingAdditionalData}
             onClick={() => {
-              // Limit display to 10k, but keep full data for copying
-              const limitedLateSku = lateSkuData.slice(0, 10000);
               setModalState({
                 isOpen: true,
-                title: `SKU Telat Masuk Details${lateSkuData.length > 10000 ? ` (Showing first 10,000 of ${lateSkuData.length.toLocaleString()})` : ''}`,
-                data: limitedLateSku,
+                title: 'SKU Telat Masuk Details',
+                data: lateSkuData,
                 fullData: lateSkuData,
                 loading: false
               });
@@ -2033,12 +2029,10 @@ const MonitoringOrder = () => {
             color="orange"
             loading={loadingAdditionalData}
             onClick={() => {
-              // Limit display to 10k, but keep full data for copying
-              const limitedInvalidSku = invalidSkuData.slice(0, 10000);
               setModalState({
                 isOpen: true,
-                title: `Invalid SKU Details${invalidSkuData.length > 10000 ? ` (Showing first 10,000 of ${invalidSkuData.length.toLocaleString()})` : ''}`,
-                data: limitedInvalidSku,
+                title: 'Invalid SKU Details',
+                data: invalidSkuData,
                 fullData: invalidSkuData,
                 loading: false
               });
@@ -2053,12 +2047,10 @@ const MonitoringOrder = () => {
             color="purple"
             loading={loadingAdditionalData}
             onClick={() => {
-              // Limit display to 10k, but keep full data for copying
-              const limitedDuplicate = duplicateOrderData.slice(0, 10000);
               setModalState({
                 isOpen: true,
-                title: `Order Duplikat Details${duplicateOrderData.length > 10000 ? ` (Showing first 10,000 of ${duplicateOrderData.length.toLocaleString()})` : ''}`,
-                data: limitedDuplicate,
+                title: 'Order Duplikat Details',
+                data: duplicateOrderData,
                 fullData: duplicateOrderData,
                 loading: false
               });
