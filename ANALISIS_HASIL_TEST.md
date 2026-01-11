@@ -145,3 +145,4 @@ Cache hasil query untuk beberapa menit:
 
 Dengan informasi ini, kita bisa identifikasi bagian mana yang lambat dan berikan solusi spesifik.
 
+

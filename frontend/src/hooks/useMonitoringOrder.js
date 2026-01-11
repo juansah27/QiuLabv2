@@ -12,7 +12,7 @@ export const useMonitoringOrder = () => {
   const [rawData, setRawData] = useState([]);
   const [retryCount, setRetryCount] = useState(0);
   const [lastFetch, setLastFetch] = useState(null);
-  
+
   // Filters state with defaults
   const [filters, setFilters] = useState({
     startDate: '',
@@ -20,7 +20,7 @@ export const useMonitoringOrder = () => {
     brand: '',
     marketplace: ''
   });
-  
+
   // Cache and performance refs
   const abortControllerRef = useRef(null);
   const cacheRef = useRef(new Map());
@@ -33,13 +33,13 @@ export const useMonitoringOrder = () => {
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const startDate = new Date(yesterday);
     startDate.setHours(17, 0, 0, 0);
-    
+
     const endDate = new Date(now);
     endDate.setHours(17, 0, 0, 0);
-    
+
     setFilters({
       startDate: startDate.toISOString().slice(0, 16),
       endDate: endDate.toISOString().slice(0, 16),
@@ -89,7 +89,7 @@ export const useMonitoringOrder = () => {
       }
       return acc;
     }, {});
-    
+
     const top20Data = Object.entries(brandCounts)
       .map(([brand, count]) => ({ name: brand, count: parseInt(count) }))
       .sort((a, b) => b.count - a.count)
@@ -102,7 +102,7 @@ export const useMonitoringOrder = () => {
       }
       return acc;
     }, {});
-    
+
     const topMarketplaceData = Object.entries(marketplaceCounts)
       .map(([marketplace, count]) => ({ name: marketplace, count: parseInt(count) }))
       .sort((a, b) => b.count - a.count)
@@ -114,7 +114,7 @@ export const useMonitoringOrder = () => {
     const startTime = new Date(now);
     startTime.setDate(startTime.getDate() - 1);
     startTime.setHours(17, 0, 0, 0);
-    
+
     const endTime = new Date(now);
     endTime.setHours(17, 0, 0, 0);
 
@@ -122,16 +122,16 @@ export const useMonitoringOrder = () => {
     for (let time = new Date(startTime); time <= endTime; time.setHours(time.getHours() + 1)) {
       const nextHour = new Date(time);
       nextHour.setHours(nextHour.getHours() + 1);
-      
+
       const ordersInHour = rawData.filter(item => {
         const orderTime = new Date(item.OrderDate);
         return orderTime >= time && orderTime < nextHour;
       }).length;
 
       orderEvolution.push({
-        time: time.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
+        time: time.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
@@ -161,7 +161,7 @@ export const useMonitoringOrder = () => {
     if (filters.startDate && filters.endDate) {
       const startDate = new Date(filters.startDate);
       const endDate = new Date(filters.endDate);
-      
+
       // Validate dates
       if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
         filtered = filtered.filter(item => {
@@ -195,7 +195,7 @@ export const useMonitoringOrder = () => {
     const cacheKey = 'monitoring-order-data';
     const cached = cacheRef.current.get(cacheKey);
     const now = Date.now();
-    
+
     if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_DURATION) {
       console.log('Using cached data');
       setRawData(cached.data);
@@ -207,7 +207,7 @@ export const useMonitoringOrder = () => {
 
     // Create new abort controller
     abortControllerRef.current = new AbortController();
-    
+
     setLoading(true);
     setError(null);
 
@@ -215,10 +215,10 @@ export const useMonitoringOrder = () => {
       try {
         const token = localStorage.getItem('token');
         const apiUrl = getApiUrl();
-        
+
         const response = await fetch(`${apiUrl}/query/monitoring-order`, {
           method: 'GET',
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
@@ -228,18 +228,18 @@ export const useMonitoringOrder = () => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const result = await response.json();
-        
+
         if (result.status === 'success' && result.data) {
           const timestamp = now;
-          
+
           // Cache the result
           cacheRef.current.set(cacheKey, {
             data: result.data,
             timestamp
           });
-          
+
           setRawData(result.data);
           setLastFetch(new Date(timestamp));
           setRetryCount(0);
@@ -254,7 +254,7 @@ export const useMonitoringOrder = () => {
         }
 
         console.error(`Fetch attempt ${attempt} failed:`, err);
-        
+
         if (attempt < MAX_RETRIES) {
           console.log(`Retrying in ${RETRY_DELAY}ms...`);
           await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * attempt));
@@ -288,11 +288,11 @@ export const useMonitoringOrder = () => {
     // Generate diverse mock data
     const mockData = [];
     const now = new Date();
-    
+
     for (let i = 0; i < 50; i++) {
       const baseEntry = mockEntries[i % mockEntries.length];
       const orderTime = new Date(now.getTime() - Math.random() * 24 * 60 * 60 * 1000);
-      
+
       mockData.push({
         ...baseEntry,
         OrderDate: orderTime.toISOString(),
@@ -300,7 +300,7 @@ export const useMonitoringOrder = () => {
         id: i + 1
       });
     }
-    
+
     return mockData;
   }, []);
 
@@ -353,19 +353,19 @@ export const useMonitoringOrder = () => {
     rawData,
     filteredData,
     processedData,
-    
+
     // State
     loading,
     error,
     filters,
     stats,
-    
+
     // Actions
     fetchData,
     updateFilters,
     clearFilters,
     retry,
-    
+
     // Computed values
     hasData: rawData.length > 0,
     hasFilters: Object.values(filters).some(filter => filter !== ''),

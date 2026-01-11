@@ -172,3 +172,4 @@ Setelah menjalankan `test_sql_connection.sh`, Anda harus melihat:
 - Pastikan SQL Server Browser service running
 - Firewall harus allow port dynamic (1434 UDP + dynamic TCP ports)
 
+

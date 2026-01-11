@@ -443,10 +443,22 @@ def query_order_monitoring():
               {date_where_clause}
         ),
         DuplicateCTE AS (
-            SELECT ORDNUM, ORDLIN, COUNT(*) AS jumlah
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
-            GROUP BY ORDNUM, ORDLIN
-            HAVING COUNT(*) > 1
+            SELECT ORDNUM, PRTNUM, ORDLIN, ORDSLN
+            FROM (
+                SELECT ols.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY ols.ORDNUM, ols.PRTNUM, ols.ORDLIN, ols.ORDSLN
+                           ORDER BY ols.ENTDTE DESC
+                       ) AS rn
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ols WITH (NOLOCK)
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM SPIDSTGEXML.dbo.ORDER_SEG os WITH (NOLOCK)
+                    WHERE os.ORDNUM = ols.ORDNUM
+                      AND os.TRANSFERDATE >= DATEADD(DAY, -3, GETDATE())
+                )
+            ) a
+            WHERE rn > 1
         ),
         MainQuery AS (
             SELECT 
@@ -489,7 +501,9 @@ def query_order_monitoring():
                   AND sku.wh_id_tmpl = 'WMD1'
             LEFT JOIN DuplicateCTE dup 
                    ON lseg.ORDNUM = dup.ORDNUM 
+                  AND lseg.PRTNUM = dup.PRTNUM
                   AND lseg.ORDLIN = dup.ORDLIN
+                  AND lseg.ORDSLN = dup.ORDSLN
         )
         SELECT 
             SystemId,
@@ -582,10 +596,22 @@ def query_order_monitoring():
               {date_where_clause}
         ),
         DuplicateCTE AS (
-            SELECT ORDNUM, ORDLIN, COUNT(*) AS jumlah
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
-            GROUP BY ORDNUM, ORDLIN
-            HAVING COUNT(*) > 1
+            SELECT ORDNUM, PRTNUM, ORDLIN, ORDSLN
+            FROM (
+                SELECT ols.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY ols.ORDNUM, ols.PRTNUM, ols.ORDLIN, ols.ORDSLN
+                           ORDER BY ols.ENTDTE DESC
+                       ) AS rn
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ols WITH (NOLOCK)
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM SPIDSTGEXML.dbo.ORDER_SEG os WITH (NOLOCK)
+                    WHERE os.ORDNUM = ols.ORDNUM
+                      AND os.TRANSFERDATE >= DATEADD(DAY, -3, GETDATE())
+                )
+            ) a
+            WHERE rn > 1
         )
         SELECT COUNT(*) as total_count
         FROM SalesOrderCTE so
@@ -603,7 +629,9 @@ def query_order_monitoring():
               AND sku.wh_id_tmpl = 'WMD1'
         LEFT JOIN DuplicateCTE dup 
                ON lseg.ORDNUM = dup.ORDNUM 
+              AND lseg.PRTNUM = dup.PRTNUM
               AND lseg.ORDLIN = dup.ORDLIN
+              AND lseg.ORDSLN = dup.ORDSLN
         """
         
         try:

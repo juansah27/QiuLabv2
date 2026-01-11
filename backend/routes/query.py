@@ -875,10 +875,22 @@ def get_sales_order_visualization():
                 AND so.FulfilledByFlexo <> '0'
         ),
         DuplicateCTE AS (
-            SELECT ORDNUM, ORDLIN, COUNT(*) AS jumlah
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
-            GROUP BY ORDNUM, ORDLIN
-            HAVING COUNT(*) > 1
+            SELECT ORDNUM, PRTNUM, ORDLIN, ORDSLN
+            FROM (
+                SELECT ols.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY ols.ORDNUM, ols.PRTNUM, ols.ORDLIN, ols.ORDSLN
+                           ORDER BY ols.ENTDTE DESC
+                       ) AS rn
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ols WITH (NOLOCK)
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM SPIDSTGEXML.dbo.ORDER_SEG os WITH (NOLOCK)
+                    WHERE os.ORDNUM = ols.ORDNUM
+                      AND os.TRANSFERDATE >= DATEADD(DAY, -3, GETDATE())
+                )
+            ) a
+            WHERE rn > 1
         )
         SELECT 
             so.SystemId,
@@ -914,7 +926,7 @@ def get_sales_order_visualization():
         LEFT JOIN [WMSPROD].[dbo].ord od WITH(NOLOCK) ON lseg.ordnum = od.ordnum
         LEFT JOIN [WMSPROD].[dbo].prtmst sku WITH(NOLOCK)
             ON lseg.prtnum = sku.prtnum AND sku.wh_id_tmpl = 'WMD1'
-        LEFT JOIN DuplicateCTE dup ON lseg.ORDNUM = dup.ORDNUM AND lseg.ORDLIN = dup.ORDLIN
+        LEFT JOIN DuplicateCTE dup ON lseg.ORDNUM = dup.ORDNUM AND lseg.PRTNUM = dup.PRTNUM AND lseg.ORDLIN = dup.ORDLIN AND lseg.ORDSLN = dup.ORDSLN
         """
         
         # Add filters
@@ -1004,10 +1016,22 @@ def get_sales_order_visualization():
                 AND so.FulfilledByFlexo <> '0'
         ),
         DuplicateCTE AS (
-            SELECT ORDNUM, ORDLIN, COUNT(*) AS jumlah
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
-            GROUP BY ORDNUM, ORDLIN
-            HAVING COUNT(*) > 1
+            SELECT ORDNUM, PRTNUM, ORDLIN, ORDSLN
+            FROM (
+                SELECT ols.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY ols.ORDNUM, ols.PRTNUM, ols.ORDLIN, ols.ORDSLN
+                           ORDER BY ols.ENTDTE DESC
+                       ) AS rn
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ols WITH (NOLOCK)
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM SPIDSTGEXML.dbo.ORDER_SEG os WITH (NOLOCK)
+                    WHERE os.ORDNUM = ols.ORDNUM
+                      AND os.TRANSFERDATE >= DATEADD(DAY, -3, GETDATE())
+                )
+            ) a
+            WHERE rn > 1
         )
         SELECT COUNT(*) as total_count
         FROM SalesOrderCTE so
@@ -1020,7 +1044,7 @@ def get_sales_order_visualization():
         LEFT JOIN [WMSPROD].[dbo].ord od WITH(NOLOCK) ON lseg.ordnum = od.ordnum
         LEFT JOIN [WMSPROD].[dbo].prtmst sku WITH(NOLOCK)
             ON lseg.prtnum = sku.prtnum AND sku.wh_id_tmpl = 'WMD1'
-        LEFT JOIN DuplicateCTE dup ON lseg.ORDNUM = dup.ORDNUM AND lseg.ORDLIN = dup.ORDLIN
+        LEFT JOIN DuplicateCTE dup ON lseg.ORDNUM = dup.ORDNUM AND lseg.PRTNUM = dup.PRTNUM AND lseg.ORDLIN = dup.ORDLIN AND lseg.ORDSLN = dup.ORDSLN
         """
         
         if where_conditions:
@@ -1190,10 +1214,22 @@ def get_sales_order_summary():
                 AND so.FulfilledByFlexo <> '0'
         ),
         DuplicateCTE AS (
-            SELECT ORDNUM, ORDLIN, COUNT(*) AS jumlah
-            FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG
-            GROUP BY ORDNUM, ORDLIN
-            HAVING COUNT(*) > 1
+            SELECT ORDNUM, PRTNUM, ORDLIN, ORDSLN
+            FROM (
+                SELECT ols.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY ols.ORDNUM, ols.PRTNUM, ols.ORDLIN, ols.ORDSLN
+                           ORDER BY ols.ENTDTE DESC
+                       ) AS rn
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ols WITH (NOLOCK)
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM SPIDSTGEXML.dbo.ORDER_SEG os WITH (NOLOCK)
+                    WHERE os.ORDNUM = ols.ORDNUM
+                      AND os.TRANSFERDATE >= DATEADD(DAY, -3, GETDATE())
+                )
+            ) a
+            WHERE rn > 1
         )
         SELECT 
             COUNT(*) as total_orders,
@@ -1214,7 +1250,7 @@ def get_sales_order_summary():
         LEFT JOIN [WMSPROD].[dbo].ord od WITH(NOLOCK) ON lseg.ordnum = od.ordnum
         LEFT JOIN [WMSPROD].[dbo].prtmst sku WITH(NOLOCK)
             ON lseg.prtnum = sku.prtnum AND sku.wh_id_tmpl = 'WMD1'
-        LEFT JOIN DuplicateCTE dup ON lseg.ORDNUM = dup.ORDNUM AND lseg.ORDLIN = dup.ORDLIN
+        LEFT JOIN DuplicateCTE dup ON lseg.ORDNUM = dup.ORDNUM AND lseg.PRTNUM = dup.PRTNUM AND lseg.ORDLIN = dup.ORDLIN AND lseg.ORDSLN = dup.ORDSLN
         """
         
         cursor.execute(summary_query)

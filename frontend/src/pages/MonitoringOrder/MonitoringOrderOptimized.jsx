@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { 
-  ChartBarIcon, ClockIcon, CheckCircleIcon, 
+import {
+  ChartBarIcon, ClockIcon, CheckCircleIcon,
   ExclamationTriangleIcon, XCircleIcon, ArrowPathIcon,
   ArrowTrendingUpIcon, ArrowTrendingDownIcon,
   Cog6ToothIcon, InformationCircleIcon
@@ -14,16 +14,16 @@ import { usePageTitle } from '../../utils/pageTitle';
 // Enhanced components
 import StatCard, { AnimatedStatsGrid } from '../../components/MonitoringOrder/StatCard';
 import FilterSection from '../../components/MonitoringOrder/FilterSection';
-import { 
-  Top20BrandsChart, 
-  MarketplaceChart, 
-  OrderEvolutionChart 
+import {
+  Top20BrandsChart,
+  MarketplaceChart,
+  OrderEvolutionChart
 } from '../../components/MonitoringOrder/OptimizedCharts';
-import { 
-  DashboardLoadingState, 
-  ErrorState, 
+import {
+  DashboardLoadingState,
+  ErrorState,
   WarningState,
-  SuccessState 
+  SuccessState
 } from '../../components/MonitoringOrder/LoadingStates';
 
 const MonitoringOrderOptimized = () => {
@@ -156,32 +156,28 @@ const MonitoringOrderOptimized = () => {
   }
 
   return (
-    <div className={`min-h-screen ${
-      isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
-    } transition-colors duration-200`}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
+      } transition-colors duration-200`}>
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Page Header */}
         <header className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <div className="mb-4 sm:mb-0">
-              <h1 className={`text-3xl font-bold ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              } transition-colors duration-200`}>
+              <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
+                } transition-colors duration-200`}>
                 SalesOrder Monitoring
               </h1>
-              <p className={`mt-2 text-lg ${
-                isDarkMode ? 'text-gray-400' : 'text-gray-600'
-              } transition-colors duration-200`}>
+              <p className={`mt-2 text-lg ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                } transition-colors duration-200`}>
                 Real-time monitoring of order processing • {stats.totalRecords} records
               </p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               {/* Data freshness indicator */}
               {stats.lastUpdate && (
-                <div className={`text-sm ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                } flex items-center space-x-1`}>
+                <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  } flex items-center space-x-1`}>
                   <ClockIcon className="w-4 h-4" />
                   <span>Updated: {stats.lastUpdate.toLocaleTimeString()}</span>
                   {isStale && (
@@ -189,16 +185,15 @@ const MonitoringOrderOptimized = () => {
                   )}
                 </div>
               )}
-              
+
               <div className="flex items-center space-x-2">
                 {/* Settings button */}
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    isDarkMode 
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                  className={`p-2 rounded-lg transition-colors duration-200 ${isDarkMode
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                    }`}
                   aria-label="Dashboard settings"
                 >
                   <Cog6ToothIcon className="w-5 h-5" />
@@ -208,9 +203,8 @@ const MonitoringOrderOptimized = () => {
                 <button
                   onClick={handleRefresh}
                   disabled={loading}
-                  className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:transform-none ${
-                    loading ? 'cursor-not-allowed' : 'active:scale-95'
-                  }`}
+                  className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:transform-none ${loading ? 'cursor-not-allowed' : 'active:scale-95'
+                    }`}
                 >
                   <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">
@@ -223,16 +217,14 @@ const MonitoringOrderOptimized = () => {
 
           {/* Performance metrics */}
           {stats.filterEfficiency && (
-            <div className={`inline-flex items-center space-x-4 px-4 py-2 rounded-lg ${
-              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            } border text-sm`}>
+            <div className={`inline-flex items-center space-x-4 px-4 py-2 rounded-lg ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              } border text-sm`}>
               <div className="flex items-center space-x-1">
                 <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Filter Efficiency:
                 </span>
-                <span className={`font-medium ${
-                  stats.filterEfficiency > 50 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
-                }`}>
+                <span className={`font-medium ${stats.filterEfficiency > 50 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
+                  }`}>
                   {stats.filterEfficiency}%
                 </span>
               </div>
@@ -240,9 +232,8 @@ const MonitoringOrderOptimized = () => {
                 <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Cache:
                 </span>
-                <span className={`font-medium ${
-                  stats.cacheStatus === 'active' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
-                }`}>
+                <span className={`font-medium ${stats.cacheStatus === 'active' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
+                  }`}>
                   {stats.cacheStatus}
                 </span>
               </div>
@@ -255,7 +246,7 @@ const MonitoringOrderOptimized = () => {
           {notifications.map(notification => (
             <div key={notification.id}>
               {notification.type === 'success' && (
-                <SuccessState 
+                <SuccessState
                   isDarkMode={isDarkMode}
                   message={notification.message}
                   action={() => removeNotification(notification.id)}
@@ -263,14 +254,14 @@ const MonitoringOrderOptimized = () => {
                 />
               )}
               {notification.type === 'error' && (
-                <ErrorState 
+                <ErrorState
                   isDarkMode={isDarkMode}
                   error={notification.message}
                   onRetry={() => removeNotification(notification.id)}
                 />
               )}
               {notification.type === 'warning' && (
-                <WarningState 
+                <WarningState
                   isDarkMode={isDarkMode}
                   message={notification.message}
                   action={() => removeNotification(notification.id)}
@@ -283,7 +274,7 @@ const MonitoringOrderOptimized = () => {
 
         {/* Error Display */}
         {error && (
-          <ErrorState 
+          <ErrorState
             isDarkMode={isDarkMode}
             error={error}
             onRetry={handleRetry}
@@ -293,7 +284,7 @@ const MonitoringOrderOptimized = () => {
 
         {/* Stale data warning */}
         {isStale && (
-          <WarningState 
+          <WarningState
             isDarkMode={isDarkMode}
             message="Data may be outdated. Consider refreshing for the latest information."
             action={handleRefresh}
@@ -303,7 +294,7 @@ const MonitoringOrderOptimized = () => {
 
         {/* Filter Section */}
         <div className="mb-8">
-          <FilterSection 
+          <FilterSection
             filters={filters}
             setFilters={handleFilterChange}
             brands={processedData.brands}
@@ -315,7 +306,7 @@ const MonitoringOrderOptimized = () => {
 
         {/* Stats Cards */}
         <div className="mb-8">
-          <AnimatedStatsGrid 
+          <AnimatedStatsGrid
             stats={statsConfig}
             loading={loading}
             columns="auto"
@@ -358,12 +349,11 @@ const MonitoringOrderOptimized = () => {
         </div>
 
         {/* Footer with meta information */}
-        <footer className={`mt-12 p-6 rounded-xl border ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        } transition-colors duration-200`}>
+        <footer className={`mt-12 p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          } transition-colors duration-200`}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm">
             <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-2 sm:mb-0`}>
-              <span className="font-medium">Performance:</span> Filtered {stats.filteredRecords} of {stats.totalRecords} records 
+              <span className="font-medium">Performance:</span> Filtered {stats.filteredRecords} of {stats.totalRecords} records
               {stats.filterEfficiency && ` (${stats.filterEfficiency}% efficiency)`}
             </div>
             <div className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} flex items-center space-x-4`}>
