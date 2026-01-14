@@ -2601,35 +2601,33 @@ def get_late_sku_data():
             
             # Execute the SKU Telat Masuk query
             query = """
-            WITH XML_RANK AS (
+            WITH WMS_3DAYS AS (
+                SELECT DISTINCT
+                    ORDNUM, ORDLIN, ORDSLN, PRTNUM
+                FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG
+                WHERE ENTDTE >= DATEADD(DAY, -3, GETDATE())
+            ),
+            XML_LAST AS (
                 SELECT
                     x.ORDNUM,
                     x.PRTNUM,
                     x.ORDLIN,
                     x.ORDSLN,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY x.ORDNUM, x.ORDLIN, x.ORDSLN, x.PRTNUM
-                        ORDER BY x.ENTDTE DESC
-                    ) AS rn
+                    MAX(x.ENTDTE) AS MaxEntdte
                 FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG x
-                WHERE EXISTS (
-                    SELECT 1
-                    FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG j
-                    WHERE j.ORDNUM = x.ORDNUM
-                      AND j.ENTDTE >= DATEADD(DAY, -3, GETDATE())
-                )
+                INNER JOIN WMS_3DAYS w
+                    ON w.ORDNUM = x.ORDNUM
+                GROUP BY
+                    x.ORDNUM, x.ORDLIN, x.ORDSLN, x.PRTNUM
             )
-            SELECT x.ORDNUM, x.PRTNUM, x.ORDLIN, x.ORDSLN
-            FROM XML_RANK x
-            WHERE x.rn = 1
-            AND NOT EXISTS (
-                SELECT 1
-                FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG j
-                WHERE j.ORDNUM = x.ORDNUM
-                  AND j.ORDLIN = x.ORDLIN
-                  AND j.ORDSLN = x.ORDSLN
-                  AND j.PRTNUM = x.PRTNUM
-            )
+            SELECT x.*
+            FROM XML_LAST x
+            LEFT JOIN WMS_3DAYS w
+                ON w.ORDNUM = x.ORDNUM
+               AND w.ORDLIN = x.ORDLIN
+               AND w.ORDSLN = x.ORDSLN
+               AND w.PRTNUM = x.PRTNUM
+            WHERE w.ORDNUM IS NULL
             """
             
             cursor.execute(query)
@@ -2719,7 +2717,7 @@ def get_invalid_sku_data():
                 ON lseg.ordnum = so.systemrefid
             LEFT JOIN WMSPROD.dbo.prtmst sku WITH(NOLOCK)
                 ON lseg.prtnum = sku.prtnum
-               AND sku.wh_id_tmpl = 'WMD1'
+               AND sku.wh_id_tmpl IN ('WMD1', 'WMD2')
             WHERE 
                 so.OrderDate >= DATEADD(DAY, -3, CAST(GETDATE() AS DATE))
                 AND so.FulfilledByFlexo <> '0'
@@ -2806,15 +2804,20 @@ def get_duplicate_orders_data():
             query = """
             SELECT ORDNUM, PRTNUM, ORDLIN, ORDSLN
             FROM (
-                SELECT *,
+                SELECT ols.*,
                        ROW_NUMBER() OVER (
-                           PARTITION BY ORDNUM, PRTNUM, ORDLIN, ORDSLN 
-                           ORDER BY ENTDTE DESC
+                           PARTITION BY ols.ORDNUM, ols.PRTNUM, ols.ORDLIN, ols.ORDSLN
+                           ORDER BY ols.ENTDTE DESC
                        ) AS rn
-                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG WITH (NOLOCK)
-                WHERE ENTDTE >= DATEADD(DAY, -90, GETDATE())
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ols WITH (NOLOCK)
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM SPIDSTGEXML.dbo.ORDER_SEG os WITH (NOLOCK)
+                    WHERE os.ORDNUM = ols.ORDNUM
+                      AND os.TRANSFERDATE >= DATEADD(DAY, -3, GETDATE())
+                )
             ) a
-            WHERE rn > 1 and TOT_PLN_PAL_QTY IS NULL
+            WHERE rn > 1
             """
             
             cursor.execute(query)
