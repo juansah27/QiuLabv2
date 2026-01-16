@@ -315,13 +315,16 @@ def run_monitoring_query():
                     END AS [Status_SC],
                     CASE 
                         WHEN so.OrderDate >= CAST(CONVERT(varchar, GETDATE(), 23) + ' 00:00:00' AS DATETIME)
-                        AND so.OrderDate <  CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME) THEN 'Batch 1'
+                         AND so.OrderDate <  CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME) THEN 'Batch 1'
                         WHEN so.OrderDate >= CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME)
-                        AND so.OrderDate <= CAST(CONVERT(varchar, GETDATE(), 23) + ' 23:59:59' AS DATETIME) THEN 'Batch 2'
+                         AND so.OrderDate <= CAST(CONVERT(varchar, GETDATE(), 23) + ' 23:59:59' AS DATETIME) THEN 'Batch 2'
                         ELSE 'Out of Range'
                     END AS Batch,
-                    '' AS Issue,
-                    '' AS [SKU Telat Masuk],
+                    CASE 
+                        WHEN MAX(api.PRTNUM) IS NULL THEN ''
+                        WHEN MAX(prt.prtnum) IS NULL THEN 'Invalid SKU'
+                        ELSE ''                                     
+                    END AS [Validasi SKU],
                     CASE 
                         WHEN DATEDIFF(MINUTE, so.OrderDate, GETDATE()) > 30 THEN 'Lebih Dari 1 jam'
                         ELSE 'Kurang Dari 1 jam'
@@ -336,15 +339,30 @@ def run_monitoring_query():
                     CASE 
                         WHEN so.Origin = 1 OR so.Origin IS NULL THEN 'Flexofast-TGR'
                         WHEN so.Origin = 3 THEN 'Flexofast-SBY'
+                        WHEN so.Origin = 4 THEN 'Flexofast-BLR'
                         ELSE 'Unknown'
                     END AS Origin
                 FROM Flexo_Db.dbo.SalesOrder so WITH (NOLOCK)
                 LEFT JOIN WMSPROD.dbo.ord_line ol WITH (NOLOCK)
                     ON ol.ordnum = so.SystemRefId
+                LEFT JOIN flexo_api.dbo.ORDER_LINE_SEG api 
+                    ON api.ORDNUM = so.SystemRefId
+                LEFT JOIN WMSPROD.dbo.prtmst prt
+                    ON prt.prtnum = api.PRTNUM
                 WHERE so.SystemRefId IN ({placeholders})
                 GROUP BY
-                    so.SystemId, so.SystemRefId, so.MerchantName, so.OrderDate, so.DtmCrt, 
-                    so.OrderStatus, so.Awb, so.DeliveryMode, so.Origin, so.ImportLog, so.FulfilledByFlexo, so.OrderedById
+                    so.SystemId,
+                    so.SystemRefId,
+                    so.MerchantName,
+                    so.OrderDate,
+                    so.DtmCrt, 
+                    so.OrderStatus,
+                    so.Awb,
+                    so.DeliveryMode,
+                    so.Origin,
+                    so.ImportLog,
+                    so.FulfilledByFlexo,
+                    so.OrderedById
                 OPTION (MAXDOP 4, OPTIMIZE FOR UNKNOWN)
                 """
                 
