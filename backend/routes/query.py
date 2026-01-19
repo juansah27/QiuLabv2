@@ -347,17 +347,18 @@ def run_monitoring_query():
                     END AS Batch,
 
                     CASE 
-                        WHEN COUNT(DISTINCT api.PRTNUM) = 0 THEN ''
-                        WHEN COUNT(DISTINCT api.PRTNUM) > COUNT(DISTINCT prt.prtnum)
+                        WHEN (SELECT COUNT(DISTINCT api.PRTNUM) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) WHERE api.ORDNUM = so.SystemRefId) = 0 THEN ''
+                        WHEN (SELECT COUNT(DISTINCT api.PRTNUM) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) WHERE api.ORDNUM = so.SystemRefId) > 
+                             (SELECT COUNT(DISTINCT prt.prtnum) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) ON prt.prtnum = api.PRTNUM WHERE api.ORDNUM = so.SystemRefId)
                         THEN 
                             'Invalid SKU ' + 
-                            STRING_AGG(
-                                CASE 
-                                    WHEN prt.prtnum IS NULL THEN api.PRTNUM 
-                                    ELSE NULL 
-                                END,
-                                ', '
-                            )
+                            ISNULL(STUFF((
+                                SELECT ', ' + api.PRTNUM
+                                FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK)
+                                LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) ON prt.prtnum = api.PRTNUM
+                                WHERE api.ORDNUM = so.SystemRefId AND prt.prtnum IS NULL
+                                FOR XML PATH(''), TYPE
+                            ).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), '')
                         ELSE ''
                     END AS [Validasi SKU],
 
@@ -366,10 +367,16 @@ def run_monitoring_query():
                         ELSE 'Kurang Dari 1 jam'
                     END AS [Status Durasi],
 
-                    STRING_AGG(api.PRTNUM, ', ') AS SKU,
+                    ISNULL(STUFF((
+                        SELECT ', ' + api.PRTNUM
+                        FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK)
+                        WHERE api.ORDNUM = so.SystemRefId
+                        FOR XML PATH(''), TYPE
+                    ).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), '') AS SKU,
+
                     so.OrderDate,
                     so.DtmCrt AS [Data Masuk CMS],
-                    MIN(api.ENTDTE) AS [Data Masuk XML],
+                    (SELECT MIN(api.ENTDTE) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) WHERE api.ORDNUM = so.SystemRefId) AS [Data Masuk XML],
                     so.TransporterCode AS Transporter,
                     so.FulfilledByFlexo AS [Diproses Flexo],
                     MAX(ol.moddte) AS [Interface Date],
@@ -384,10 +391,6 @@ def run_monitoring_query():
                 FROM Flexo_Db.dbo.SalesOrder so WITH (NOLOCK)
                 LEFT JOIN WMSPROD.dbo.ord_line ol WITH (NOLOCK)
                     ON ol.ordnum = so.SystemRefId
-                LEFT JOIN flexo_api.dbo.ORDER_LINE_SEG api 
-                    ON api.ORDNUM = so.SystemRefId
-                LEFT JOIN WMSPROD.dbo.prtmst prt
-                    ON prt.prtnum = api.PRTNUM
 
                 WHERE so.SystemRefId IN ({placeholders})
 
