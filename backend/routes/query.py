@@ -283,25 +283,26 @@ def run_monitoring_query():
                 # OPTIMIZED VERSION: Removed slow EXISTS subqueries
                 monitoring_query = f"""
                 SELECT
-                CASE 
-                WHEN so.SystemId ='MPSH' THEN 'SHOPEE'
-                WHEN so.SystemId ='MSTP' THEN 'TOKOPEDIA'
-                WHEN so.SystemId = 'GCOOP' THEN 'GCOOP'
-                WHEN so.SystemId = 'Jubelio' THEN 'JUBELIO'
-                WHEN so.SystemId = 'MPJD' THEN 'JD.ID'
-                WHEN so.SystemId = 'MPLZ' THEN 'LAZADA'
-                WHEN so.SystemId = 'Other' THEN 'OTHER'
-                WHEN so.SystemId = 'SS' THEN 'SISTERSEL'
-                WHEN so.SystemId = 'MPBI' THEN 'BLIBLI'
-                WHEN so.SystemId = 'GDTech' THEN 'GDTECH'
-                WHEN so.SystemId = 'MPTS' THEN 'TIKTOK'
-                WHEN so.SystemId = 'SHPY' THEN 'SHOPIFY'
-                WHEN so.SystemId = 'MPZR' THEN 'ZALORA'
-                WHEN so.SystemId = 'MPUP' THEN 'CMS FLEXO'
-                WHEN so.SystemId = 'MPGN' THEN 'GINEE'
-                WHEN so.SystemId = 'MPDS' THEN 'DESTY'
-                else 'NEW CHANNEL'
-                END AS SalesChannel,
+                    CASE 
+                        WHEN so.SystemId = 'MPSH' THEN 'SHOPEE'
+                        WHEN so.SystemId = 'MSTP' THEN 'TOKOPEDIA'
+                        WHEN so.SystemId = 'GCOOP' THEN 'GCOOP'
+                        WHEN so.SystemId = 'Jubelio' THEN 'JUBELIO'
+                        WHEN so.SystemId = 'MPJD' THEN 'JD.ID'
+                        WHEN so.SystemId = 'MPLZ' THEN 'LAZADA'
+                        WHEN so.SystemId = 'Other' THEN 'OTHER'
+                        WHEN so.SystemId = 'SS' THEN 'SISTERSEL'
+                        WHEN so.SystemId = 'MPBI' THEN 'BLIBLI'
+                        WHEN so.SystemId = 'GDTech' THEN 'GDTECH'
+                        WHEN so.SystemId = 'MPTS' THEN 'TIKTOK'
+                        WHEN so.SystemId = 'SHPY' THEN 'SHOPIFY'
+                        WHEN so.SystemId = 'MPZR' THEN 'ZALORA'
+                        WHEN so.SystemId = 'MPUP' THEN 'CMS FLEXO'
+                        WHEN so.SystemId = 'MPGN' THEN 'GINEE'
+                        WHEN so.SystemId = 'MPDS' THEN 'DESTY'
+                        ELSE 'NEW CHANNEL'
+                    END AS SalesChannel,
+
                     CASE 
                         WHEN so.MerchantName = 'SH680AFFCF5F1503000192BFEF' THEN 'AMAN MAJU NUSANTARA'
                         WHEN so.MerchantName = 'SH680AFFA3CFF47E0001ABE2F8' THEN 'AMAN MAJU NUSANTARA'
@@ -314,23 +315,29 @@ def run_monitoring_query():
                         WHEN so.MerchantName = 'SH680A67FDE21B8400014849AB' THEN 'AMAN MAJU NUSANTARA'
                         WHEN so.MerchantName = 'MOTHER OF PEARL' THEN 'MOP'
                         ELSE so.MerchantName
-                    END AS Brand, 
-                    so.SystemRefId,
+                    END AS Brand,
+
+                    so.SystemRefId AS [Order Number],
                     so.OrderStatus,
-                    so.Awb,
+                    so.Awb AS [No. Resi],
                     so.OrderedById,
+
                     CASE 
                         WHEN COUNT(ol.ordnum) > 0 THEN 'Yes'
                         ELSE 'No'
-                    END AS [Status_Interfaced],
+                    END AS [Status Interfaced],
+
                     CASE 
                         WHEN so.SystemId = 'MPSH' THEN 
                             CASE 
-                                WHEN so.OrderedById = 'LOGISTICS_NOT_START' AND so.OrderStatus = 'READY_TO_SHIP' THEN 'Pending Verifikasi'
+                                WHEN so.OrderedById = 'LOGISTICS_NOT_START' 
+                                     AND so.OrderStatus = 'READY_TO_SHIP' 
+                                THEN 'Pending Verifikasi'
                                 ELSE 'Follow Up!'
                             END
                         ELSE 'Follow Up!'
-                    END AS [Status_SC],
+                    END AS [Status SC],
+
                     CASE 
                         WHEN so.OrderDate >= CAST(CONVERT(varchar, GETDATE(), 23) + ' 00:00:00' AS DATETIME)
                          AND so.OrderDate <  CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME) THEN 'Batch 1'
@@ -338,38 +345,42 @@ def run_monitoring_query():
                          AND so.OrderDate <= CAST(CONVERT(varchar, GETDATE(), 23) + ' 23:59:59' AS DATETIME) THEN 'Batch 2'
                         ELSE 'Out of Range'
                     END AS Batch,
+
                     CASE 
-                    WHEN COUNT(DISTINCT api.PRTNUM) = 0 THEN ''
-                    WHEN COUNT(DISTINCT api.PRTNUM) 
-                       > COUNT(DISTINCT prt.prtnum) 
-                    THEN 
-                        'Invalid SKU ' + 
-                        STRING_AGG(
-                            CASE 
-                                WHEN prt.prtnum IS NULL THEN api.PRTNUM 
-                                ELSE NULL 
-                            END,
-                            ', '
-                        )
-                    ELSE ''
-                END AS [Validasi SKU],
+                        WHEN COUNT(DISTINCT api.PRTNUM) = 0 THEN ''
+                        WHEN COUNT(DISTINCT api.PRTNUM) > COUNT(DISTINCT prt.prtnum)
+                        THEN 
+                            'Invalid SKU ' + 
+                            STRING_AGG(
+                                CASE 
+                                    WHEN prt.prtnum IS NULL THEN api.PRTNUM 
+                                    ELSE NULL 
+                                END,
+                                ', '
+                            )
+                        ELSE ''
+                    END AS [Validasi SKU],
+
                     CASE 
                         WHEN DATEDIFF(MINUTE, so.OrderDate, GETDATE()) > 30 THEN 'Lebih Dari 1 jam'
                         ELSE 'Kurang Dari 1 jam'
-                    END AS [Status_Durasi],
-                    STRING_AGG(api.PRTNUM, ', ') AS ItemIds,
+                    END AS [Status Durasi],
+
+                    STRING_AGG(api.PRTNUM, ', ') AS SKU,
                     so.OrderDate,
-                    so.DtmCrt,
-                    api.ENTDTE,
+                    so.DtmCrt AS [Data Masuk CMS],
+                    MIN(api.ENTDTE) AS [Data Masuk XML],
                     so.TransporterCode AS Transporter,
-                    so.FulfilledByFlexo,
-                    MAX(ol.moddte) AS AddDate,  
+                    so.FulfilledByFlexo AS [Diproses Flexo],
+                    MAX(ol.moddte) AS [Interface Date],
+
                     CASE 
                         WHEN so.Origin = 1 OR so.Origin IS NULL THEN 'Flexofast-TGR'
                         WHEN so.Origin = 3 THEN 'Flexofast-SBY'
                         WHEN so.Origin = 4 THEN 'Flexofast-BLR'
                         ELSE 'Unknown'
-                    END AS Origin
+                    END AS [WH Loc]
+
                 FROM Flexo_Db.dbo.SalesOrder so WITH (NOLOCK)
                 LEFT JOIN WMSPROD.dbo.ord_line ol WITH (NOLOCK)
                     ON ol.ordnum = so.SystemRefId
@@ -377,20 +388,22 @@ def run_monitoring_query():
                     ON api.ORDNUM = so.SystemRefId
                 LEFT JOIN WMSPROD.dbo.prtmst prt
                     ON prt.prtnum = api.PRTNUM
+
                 WHERE so.SystemRefId IN ({placeholders})
+
                 GROUP BY
                     so.SystemId,
                     so.SystemRefId,
                     so.MerchantName,
                     so.OrderDate,
                     so.DtmCrt,
-                    api.ENTDTE,
                     so.OrderStatus,
                     so.Awb,
                     so.TransporterCode,
                     so.Origin,
                     so.FulfilledByFlexo,
                     so.OrderedById
+
                 OPTION (MAXDOP 4, OPTIMIZE FOR UNKNOWN)
                 """
                 
@@ -418,13 +431,13 @@ def run_monitoring_query():
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 # Buat mapping SystemRefId -> Remark dari SQLite
-                system_ref_ids = [row.get('SystemRefId') for row in results if row.get('SystemRefId')]
+                system_ref_ids = [row.get('Order Number') for row in results if row.get('Order Number')]
                 if system_ref_ids:
                     placeholders = ','.join(['?'] * len(system_ref_ids))
                     cursor.execute(f"SELECT system_ref_id, remark FROM monitoring WHERE system_ref_id IN ({placeholders})", system_ref_ids)
                     remark_map = {row['system_ref_id']: row['remark'] for row in cursor.fetchall()}
                     for row in results:
-                        sysid = row.get('SystemRefId')
+                        sysid = row.get('Order Number')
                         if sysid in remark_map:
                             row['Remark'] = remark_map[sysid]
                         else:

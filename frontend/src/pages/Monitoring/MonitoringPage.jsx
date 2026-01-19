@@ -23,23 +23,23 @@ const preloadXLSXLibrary = () => {
     console.log('Library XLSX sudah tersedia');
     return;
   }
-  
+
   console.log('Memuat library XLSX...');
   // Buat element script
   const scriptEl = document.createElement('script');
   scriptEl.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
   scriptEl.async = true;
   scriptEl.id = 'xlsx-script';
-  
+
   // Tambahkan event untuk memantau status loading
   scriptEl.onload = () => {
     console.log('Library XLSX berhasil dimuat');
   };
-  
+
   scriptEl.onerror = (error) => {
     console.error('Gagal memuat library XLSX:', error);
   };
-  
+
   // Tambahkan script ke body
   document.body.appendChild(scriptEl);
 };
@@ -47,10 +47,10 @@ const preloadXLSXLibrary = () => {
 const MonitoringPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // Set page title
   usePageTitle('Cek Order');
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
@@ -58,37 +58,37 @@ const MonitoringPage = () => {
   const [notification, setNotification] = useState({ open: false, message: '', type: 'info' });
   const [activeFilters, setActiveFilters] = useState([]);
   const [showTable, setShowTable] = useState(false);
-  
+
   const dashboardRef = useRef(null);
-  
+
   const showNotification = (message, type = 'success') => {
     setNotification({
       open: true,
       message,
       type
     });
-    
+
     setTimeout(() => {
       setNotification(prev => ({ ...prev, open: false }));
     }, 3000);
   };
-  
+
   const handleFilterClick = useCallback((column, value) => {
     setActiveFilters(prev => {
       const existingFilterIndex = prev.findIndex(
         filter => filter.column === column && filter.value === value
       );
-      
+
       if (existingFilterIndex >= 0) {
         const newFilters = [...prev];
         newFilters.splice(existingFilterIndex, 1);
         return newFilters;
       }
-      
+
       return [...prev, { column, value }];
     });
   }, []);
-  
+
   const removeFilter = useCallback((index) => {
     setActiveFilters(prev => {
       const newFilters = [...prev];
@@ -96,11 +96,11 @@ const MonitoringPage = () => {
       return newFilters;
     });
   }, []);
-  
+
   const clearAllFilters = useCallback(() => {
     setActiveFilters([]);
   }, []);
-  
+
   const fetchData = useCallback(async () => {
     if (!systemRefIds.trim()) {
       setError('Silakan masukkan minimal satu SystemRefId');
@@ -109,7 +109,7 @@ const MonitoringPage = () => {
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const idsArray = systemRefIds
         .split(/[\n,]+/)
@@ -137,7 +137,7 @@ const MonitoringPage = () => {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               system_ref_ids: batchIds
             })
           });
@@ -149,8 +149,8 @@ const MonitoringPage = () => {
           const batchData = result.data?.results || [];
           const newBatch = [];
           for (const item of batchData) {
-            if (item && item.SystemRefId) {
-              const cleanId = item.SystemRefId.trim();
+            if (item && (item['Order Number'] || item.SystemRefId)) {
+              const cleanId = (item['Order Number'] || item.SystemRefId).trim();
               if (!processedIds.has(cleanId)) {
                 processedIds.add(cleanId);
                 newBatch.push({
@@ -202,7 +202,7 @@ const MonitoringPage = () => {
         });
       }
       // Final notification
-      const successMessage = missingIds.length > 0 
+      const successMessage = missingIds.length > 0
         ? `${processedIds.size} Data berhasil dimuat dari ${idsArray.length} SystemRefId (${missingIds.length} SystemRefId tidak ditemukan)`
         : `${processedIds.size} Data berhasil dimuat dari ${idsArray.length} SystemRefId`;
       showNotification(successMessage, 'success');
@@ -214,7 +214,7 @@ const MonitoringPage = () => {
       setIsLoading(false);
     }
   }, [systemRefIds, showNotification]);
-  
+
   const handleSubmit = useCallback(() => {
     fetchData();
   }, [fetchData]);
@@ -226,12 +226,12 @@ const MonitoringPage = () => {
   const handleRefresh = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Add retry mechanism
       let retries = 3;
       let lastError;
-      
+
       while (retries > 0) {
         try {
           // Reset data before fetching new data
@@ -247,7 +247,7 @@ const MonitoringPage = () => {
           }
         }
       }
-      
+
       throw lastError;
     } catch (err) {
       console.error('Error refreshing data:', err);
@@ -257,7 +257,7 @@ const MonitoringPage = () => {
       setIsLoading(false);
     }
   }, [fetchData, showNotification]);
-  
+
   const formatDate = (date) => {
     if (!date) return 'N/A';
     try {
@@ -286,28 +286,28 @@ const MonitoringPage = () => {
     if (!data || !data.length) {
       return data;
     }
-    
+
     // If no filters are active, return all data
     if (!activeFilters || activeFilters.length === 0) {
       return data;
     }
-    
+
     const filtered = data.filter(item => {
       if (!item) return false;
-      
+
       // Check each active filter
       for (const filter of activeFilters) {
         const { column, value } = filter;
-        
+
         if (column === 'all') continue;
-        
+
         const itemValue = item[column];
-        
+
         if (column === 'Remark') {
           const remarkValue = getRemarkValue(item);
           const normalizedRemarkValue = normalizeStatusName(remarkValue);
           let matches = false;
-          
+
           // Handle special cases for Remark filtering
           if (value === 'NULL' && (!remarkValue || remarkValue === '' || remarkValue === null)) {
             matches = true;
@@ -318,7 +318,7 @@ const MonitoringPage = () => {
           } else if (normalizedRemarkValue === value) {
             matches = true;
           }
-          
+
           if (!matches) {
             return false;
           }
@@ -329,10 +329,10 @@ const MonitoringPage = () => {
           }
         }
       }
-      
+
       return true;
     });
-    
+
     return filtered;
   }, [data, activeFilters]);
 
@@ -346,7 +346,7 @@ const MonitoringPage = () => {
       scale: 2
     });
     const link = document.createElement('a');
-    link.download = `monitoring-dashboard-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.png`;
+    link.download = `monitoring-dashboard-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -397,7 +397,7 @@ const MonitoringPage = () => {
           </Button>
         </Box>
       </Box>
-      
+
       {/* Wrap dashboard visual in a ref for screenshot */}
       <div ref={dashboardRef}>
         {!data || data.length === 0 ? (
@@ -414,10 +414,10 @@ const MonitoringPage = () => {
         ) : null}
 
         {error && (
-          <Box sx={{ 
-            mb: 3, 
-            p: 2, 
-            bgcolor: 'error.light', 
+          <Box sx={{
+            mb: 3,
+            p: 2,
+            bgcolor: 'error.light',
             color: 'error.dark',
             borderRadius: 1,
             '&.MuiBox-root': {
@@ -428,8 +428,8 @@ const MonitoringPage = () => {
             <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
               Error: {error}
             </Typography>
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               color="error"
               size="small"
               onClick={handleRefresh}
@@ -439,35 +439,35 @@ const MonitoringPage = () => {
             </Button>
           </Box>
         )}
-        
+
         {isLoading && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
             my: 4,
             '& .MuiCircularProgress-root': {
-              color: theme.palette.mode === 'dark' ? '#90CAF9' : '#1976d2'  
+              color: theme.palette.mode === 'dark' ? '#90CAF9' : '#1976d2'
             }
           }}>
             <CircularProgress />
           </Box>
         )}
-        
+
         {!isLoading && !error && (
           <Box sx={{ mb: 4 }}>
-            <StatusCards 
-              tableData={data} 
+            <StatusCards
+              tableData={data}
               onFilterClick={handleFilterClick}
               activeFilters={activeFilters}
             />
           </Box>
         )}
-        
+
         {/* Table only rendered if showTable is true */}
         {!isLoading && !error && filteredData.length > 0 && showTable && (
           <Box sx={{ width: '100%', mb: 4 }}>
-            <QueryResultTable 
-              data={filteredData} 
+            <QueryResultTable
+              data={filteredData}
               loading={isLoading}
               activeFilters={activeFilters}
               onRefresh={handleRefresh}
@@ -476,16 +476,16 @@ const MonitoringPage = () => {
             />
           </Box>
         )}
-        
+
         {/* Show message when table is hidden but data is available */}
         {!isLoading && !error && filteredData.length > 0 && !showTable && (
-          <Box sx={{ 
-            width: '100%', 
-            mb: 4, 
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 26, 32, 0.95)' : 'background.paper', 
-            borderRadius: 1, 
-            overflow: 'hidden', 
-            boxShadow: 1 
+          <Box sx={{
+            width: '100%',
+            mb: 4,
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 26, 32, 0.95)' : 'background.paper',
+            borderRadius: 1,
+            overflow: 'hidden',
+            boxShadow: 1
           }}>
             <div className="p-6 text-center text-gray-500 dark:text-gray-400">
               <p className="mb-2">Tabel tersembunyi. Klik "Tampilkan Tabel" untuk melihat data yang difilter.</p>
@@ -493,24 +493,24 @@ const MonitoringPage = () => {
             </div>
           </Box>
         )}
-        
 
-        
+
+
         {!isLoading && !error && data.length > 0 && filteredData.length === 0 && (
-          <Box sx={{ 
-            width: '100%', 
-            mb: 4, 
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 26, 32, 0.95)' : 'background.paper', 
-            borderRadius: 1, 
-            overflow: 'hidden', 
-            boxShadow: 1 
+          <Box sx={{
+            width: '100%',
+            mb: 4,
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(24, 26, 32, 0.95)' : 'background.paper',
+            borderRadius: 1,
+            overflow: 'hidden',
+            boxShadow: 1
           }}>
             <div className="p-6 text-center text-gray-500 dark:text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="mb-2">Tidak ada data yang sesuai dengan filter yang dipilih</p>
-              <button 
+              <button
                 onClick={clearAllFilters}
                 className="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm"
               >
@@ -520,7 +520,7 @@ const MonitoringPage = () => {
           </Box>
         )}
       </div>
-      
+
       <Snackbar
         open={notification.open}
         autoHideDuration={3000}
@@ -532,9 +532,9 @@ const MonitoringPage = () => {
           }
         }}
       >
-        <Alert 
-          elevation={6} 
-          variant="filled" 
+        <Alert
+          elevation={6}
+          variant="filled"
           severity={notification.type}
           onClose={() => setNotification(prev => ({ ...prev, open: false }))}
         >

@@ -28,25 +28,25 @@ const SummaryCard = ({ title, value, icon, color, onClick, isActive = false }) =
     const el = e.currentTarget;
     const circle = document.createElement('span');
     const diameter = Math.max(el.clientWidth, el.clientHeight);
-    
+
     circle.style.width = circle.style.height = `${diameter}px`;
     circle.style.left = `${e.clientX - el.offsetLeft - diameter / 2}px`;
     circle.style.top = `${e.clientY - el.offsetTop - diameter / 2}px`;
     circle.classList.add('ripple');
-    
+
     const ripple = el.getElementsByClassName('ripple')[0];
     if (ripple) {
       ripple.remove();
     }
-    
+
     el.appendChild(circle);
-    
+
     // Jalankan onClick callback
     if (onClick) onClick(e);
   };
 
   return (
-    <div 
+    <div
       className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-3 h-full cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md overflow-hidden group ${isActive ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
       onClick={handleClick}
       style={{ isolation: 'isolate' }}
@@ -55,7 +55,7 @@ const SummaryCard = ({ title, value, icon, color, onClick, isActive = false }) =
       {isActive && (
         <div className="absolute top-0 right-0 w-0 h-0 border-t-[16px] border-r-[16px] border-t-blue-500 border-r-transparent z-10"></div>
       )}
-      
+
       <style>{`
         .ripple {
           position: absolute;
@@ -73,7 +73,7 @@ const SummaryCard = ({ title, value, icon, color, onClick, isActive = false }) =
           }
         }
       `}</style>
-      
+
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
@@ -86,14 +86,14 @@ const SummaryCard = ({ title, value, icon, color, onClick, isActive = false }) =
             <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Order</span>
           </div>
         </div>
-        
+
         <div className={`rounded-full p-2 ${getColorClass(color)} flex-shrink-0`}>
           {icon}
         </div>
       </div>
-      
+
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white dark:to-gray-800 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-      
+
       <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 flex items-center text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
@@ -105,11 +105,11 @@ const SummaryCard = ({ title, value, icon, color, onClick, isActive = false }) =
 };
 
 // Extract BarChart component
-const MerchantBarChart = React.memo(({ 
-  data, 
-  isDarkMode, 
-  textColor, 
-  gridColor, 
+const MerchantBarChart = React.memo(({
+  data,
+  isDarkMode,
+  textColor,
+  gridColor,
   handleChartClick,
   BAR_GRADIENT_COLORS,
   BarChartTooltip
@@ -134,26 +134,26 @@ const MerchantBarChart = React.memo(({
         }}
         style={{ cursor: 'pointer' }}
       >
-        <CartesianGrid 
-          strokeDasharray="3 3" 
+        <CartesianGrid
+          strokeDasharray="3 3"
           stroke={isDarkMode ? '#374151' : '#e5e7eb'}
           horizontal={true}
           vertical={false}
         />
-        <XAxis 
-          type="number" 
-          stroke={textColor} 
+        <XAxis
+          type="number"
+          stroke={textColor}
           tickLine={false}
           axisLine={{ stroke: gridColor }}
           fontSize={10}
           tickFormatter={(value) => value}
         />
-        <YAxis 
-          type="category" 
-          dataKey="name" 
+        <YAxis
+          type="category"
+          dataKey="name"
           width={120}
-          tick={{ 
-            fontSize: 10, 
+          tick={{
+            fontSize: 10,
             fill: textColor
           }}
           tickFormatter={(value) => {
@@ -164,27 +164,27 @@ const MerchantBarChart = React.memo(({
           axisLine={{ stroke: gridColor }}
         />
         <Tooltip content={<BarChartTooltip />} cursor={{ fill: 'transparent', opacity: 0 }} />
-        <Bar 
-          dataKey="Pending Verifikasi" 
-          stackId="a" 
+        <Bar
+          dataKey="Pending Verifikasi"
+          stackId="a"
           fill="url(#pendingGradient)"
           radius={[0, 0, 0, 0]}
         />
-        <Bar 
-          dataKey="Cancel" 
-          stackId="a" 
+        <Bar
+          dataKey="Cancel"
+          stackId="a"
           fill="url(#cancelGradient)"
           radius={[0, 0, 0, 0]}
         />
-        <Bar 
-          dataKey="IN_Cancel" 
-          stackId="a" 
+        <Bar
+          dataKey="IN_Cancel"
+          stackId="a"
           fill="url(#inCancelGradient)"
           radius={[0, 0, 0, 0]}
         />
-        <Bar 
-          dataKey="Tanpa Remark" 
-          stackId="a" 
+        <Bar
+          dataKey="Tanpa Remark"
+          stackId="a"
           fill="url(#emptyGradient)"
           radius={[0, 4, 4, 0]}
           label={{
@@ -216,20 +216,20 @@ const MerchantBarChart = React.memo(({
         />
         <defs>
           <linearGradient id="pendingGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="5%" stopColor={BAR_GRADIENT_COLORS['Pending Verifikasi'][0]} stopOpacity={0.8}/>
-            <stop offset="95%" stopColor={BAR_GRADIENT_COLORS['Pending Verifikasi'][1]} stopOpacity={1}/>
+            <stop offset="5%" stopColor={BAR_GRADIENT_COLORS['Pending Verifikasi'][0]} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={BAR_GRADIENT_COLORS['Pending Verifikasi'][1]} stopOpacity={1} />
           </linearGradient>
           <linearGradient id="cancelGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="5%" stopColor={BAR_GRADIENT_COLORS['Cancel'][0]} stopOpacity={0.8}/>
-            <stop offset="95%" stopColor={BAR_GRADIENT_COLORS['Cancel'][1]} stopOpacity={1}/>
+            <stop offset="5%" stopColor={BAR_GRADIENT_COLORS['Cancel'][0]} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={BAR_GRADIENT_COLORS['Cancel'][1]} stopOpacity={1} />
           </linearGradient>
           <linearGradient id="inCancelGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="5%" stopColor={BAR_GRADIENT_COLORS['IN_Cancel'][0]} stopOpacity={0.8}/>
-            <stop offset="95%" stopColor={BAR_GRADIENT_COLORS['IN_Cancel'][1]} stopOpacity={1}/>
+            <stop offset="5%" stopColor={BAR_GRADIENT_COLORS['IN_Cancel'][0]} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={BAR_GRADIENT_COLORS['IN_Cancel'][1]} stopOpacity={1} />
           </linearGradient>
           <linearGradient id="emptyGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#6b7280" stopOpacity={1}/>
+            <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#6b7280" stopOpacity={1} />
           </linearGradient>
         </defs>
       </BarChart>
@@ -238,11 +238,11 @@ const MerchantBarChart = React.memo(({
 });
 
 // Extract PieChart component
-const StatusPieChart = React.memo(({ 
-  data, 
-  activeIndex, 
-  renderActiveShape, 
-  onPieEnter, 
+const StatusPieChart = React.memo(({
+  data,
+  activeIndex,
+  renderActiveShape,
+  onPieEnter,
   handleChartClick,
   statusColumn,
   PIE_COLORS,
@@ -275,22 +275,22 @@ const StatusPieChart = React.memo(({
           animationEasing="ease-out"
         >
           {data.map((entry, index) => (
-            <Cell 
-              key={`cell-${index}`} 
-              fill={entry.color} 
+            <Cell
+              key={`cell-${index}`}
+              fill={entry.color}
               stroke={isDarkMode ? '#1a1a1a' : '#fff'}
               strokeWidth={2}
             />
           ))}
         </Pie>
         <Tooltip content={<PieChartTooltip />} />
-        <Legend 
+        <Legend
           layout="vertical"
           verticalAlign="middle"
           align="right"
           payload={statusInterfacedLegendData.map(entry => ({
-            value: entry.isSubItem 
-              ? `${entry.name}: ${entry.value}` 
+            value: entry.isSubItem
+              ? `${entry.name}: ${entry.value}`
               : `${entry.name} (${entry.value})`,
             type: entry.isSubItem ? 'line' : 'circle',
             id: entry.id,
@@ -299,9 +299,9 @@ const StatusPieChart = React.memo(({
             entryName: entry.name
           }))}
           formatter={(value, entry, index) => (
-            <span 
-              style={{ 
-                color: textColor, 
+            <span
+              style={{
+                color: textColor,
                 fontSize: '12px',
                 marginLeft: entry.isSubItem ? '16px' : '0',
                 cursor: 'pointer',
@@ -330,7 +330,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
   const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // Optimize dark mode detection with useCallback
   const detectDarkMode = useCallback(() => {
     setIsDarkMode(document.documentElement.classList.contains('dark'));
@@ -397,7 +397,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
 
     const firstItem = tableData[0] || {};
     const columnKeys = Object.keys(firstItem);
-    
+
     const getColumnName = (possibleNames) => {
       for (const name of possibleNames) {
         if (columnKeys.includes(name)) {
@@ -406,10 +406,10 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
       }
       return possibleNames[0];
     };
-    
+
     return {
       statusColumn: getColumnName(['Status_Interfaced', 'Status Interfaced']),
-      merchantColumn: getColumnName(['MerchantName', 'Merchant Name', 'Merchant']),
+      merchantColumn: getColumnName(['Brand', 'MerchantName', 'Merchant Name', 'Merchant']),
       remarkColumn: getColumnName(['Remark'])
     };
   }, [tableData]);
@@ -441,7 +441,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
   // Helper function for legend data generation with grouping
   const generateLegendData = useCallback((statusCount, data, colors) => {
     let result = [];
-    
+
     result = Object.keys(statusCount).map((key, index) => ({
       id: key,
       name: key === 'Yes' ? 'Interfaced' : 'Not Yet Interfaced',
@@ -449,10 +449,10 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
       color: colors[index % colors.length],
       isMainStatus: true
     })).filter(item => item.value > 0);
-    
+
     if (statusCount['No'] > 0) {
       const remarkStats = {};
-      
+
       data.forEach(row => {
         const status = row[columnNames.statusColumn];
         if (status === 'No') {
@@ -466,7 +466,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
           }
         }
       });
-      
+
       const priorityRemarks = [...getStatusPriorities(), 'NULL'];
       const remarkEntries = Object.entries(remarkStats)
         .sort((a, b) => {
@@ -478,7 +478,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
           return b[1] - a[1];
         })
         .slice(0, 5);
-      
+
       remarkEntries.forEach(([remark, count]) => {
         result.push({
           id: `remark-${remark}`,
@@ -489,7 +489,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
         });
       });
     }
-    
+
     return result;
   }, [columnNames, normalizeStatusName]);
 
@@ -535,25 +535,25 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
       const merchant = row[columnNames.merchantColumn] || 'Unknown';
       const remark = getRemarkValue(row);
       const isEmptyRemark = remark === null || remark === undefined || remark === '';
-      
+
       if (!merchantGroups.has(merchant)) {
         const groupTemplate = {
           name: merchant,
           'Tanpa Remark': 0,
           total: 0
         };
-        
+
         // Add all status groups dynamically
         getStatusGroups().forEach(groupName => {
           groupTemplate[groupName] = 0;
         });
-        
+
         merchantGroups.set(merchant, groupTemplate);
       }
-      
+
       const group = merchantGroups.get(merchant);
       group.total++;
-      
+
       if (isEmptyRemark) {
         group['Tanpa Remark']++;
       } else {
@@ -590,7 +590,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
     // Process system ID data
     const systemIdCount = new Map();
     tableData.forEach(row => {
-      const systemId = row.SystemID || row.systemID || row['System ID'] || row.SystemId || row['SystemId'] || 'Unknown';
+      const systemId = row.SalesChannel || row.SystemID || row.systemID || row['System ID'] || row.SystemId || row['SystemId'] || 'Unknown';
       if (systemId && systemId !== 'Unknown') {
         systemIdCount.set(systemId, (systemIdCount.get(systemId) || 0) + 1);
       }
@@ -608,12 +608,12 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
             console.warn('Invalid date:', orderDate);
             return;
           }
-          
+
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const day = String(date.getDate()).padStart(2, '0');
           const hour = String(date.getHours()).padStart(2, '0');
-          
+
           const formattedDate = `${year}-${month}-${day} ${hour}:00`;
           hourCount.set(formattedDate, (hourCount.get(formattedDate) || 0) + 1);
         } catch (error) {
@@ -626,12 +626,12 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
     const sortedHourData = Array.from(hourCount.entries())
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
-    
+
     // If we have more than 24 data points, take the last 24
-    let orderDateData = sortedHourData.length > 24 
-      ? sortedHourData.slice(-24) 
+    let orderDateData = sortedHourData.length > 24
+      ? sortedHourData.slice(-24)
       : sortedHourData;
-    
+
     // If no data, create some dummy data for demonstration
     if (orderDateData.length === 0) {
       const now = new Date();
@@ -673,10 +673,10 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
     const detectDarkMode = () => {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
     };
-    
+
     // Panggil sekali untuk inisialisasi
     detectDarkMode();
-    
+
     // Observer untuk mendeteksi perubahan class pada html element
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -688,11 +688,11 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
         }
       });
     });
-    
+
     observer.observe(document.documentElement, {
       attributes: true
     });
-    
+
     return () => {
       observer.disconnect();
     };
@@ -722,7 +722,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
     return ({ active, payload, label }) => {
       if (active && payload && payload.length) {
         const total = payload.reduce((sum, entry) => sum + entry.value, 0);
-        
+
         const sortedPayload = [...payload].sort((a, b) => {
           const priorityOrder = {
             'Tanpa Remark': 1,
@@ -730,26 +730,26 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
             'Cancel': 3,
             'IN_Cancel': 4
           };
-          
+
           if (priorityOrder[a.name] && priorityOrder[b.name]) {
             return priorityOrder[a.name] - priorityOrder[b.name];
           }
-          
+
           if (priorityOrder[a.name]) return -1;
           if (priorityOrder[b.name]) return 1;
           return b.value - a.value;
         });
-        
+
         return (
           <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg text-sm">
             <p className="font-medium text-gray-800 dark:text-gray-200 mb-2">{`${label}`}</p>
             <p className="text-gray-600 dark:text-gray-400 text-xs mb-2">
               Total: <span className="font-semibold">{total}</span> transaksi belum interfaced
             </p>
-            
+
             {sortedPayload.map((entry, index) => {
               let color;
-              switch(entry.name) {
+              switch (entry.name) {
                 case 'Pending Verifikasi':
                   color = chartColors.BAR_GRADIENT_COLORS['Pending Verifikasi'][0];
                   break;
@@ -765,20 +765,20 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                 default:
                   color = '#9ca3af';
               }
-              
+
               return (
                 <div key={`tooltip-${index}`} className="flex gap-2 items-center mt-1">
                   <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: color }}></div>
                   <p className="text-gray-600 dark:text-gray-400">
                     {`${entry.name}: ${entry.value}`}
-                    {entry.name === 'Tanpa Remark' && 
+                    {entry.name === 'Tanpa Remark' &&
                       <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">(perlu ditindaklanjuti)</span>
                     }
                   </p>
                 </div>
               );
             })}
-            
+
             <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-blue-600 dark:text-blue-400">
               Klik untuk filter berdasarkan client
             </div>
@@ -793,7 +793,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
     return ({ active, payload }) => {
       if (active && payload && payload.length) {
         const data = payload[0];
-        
+
         return (
           <div style={{
             backgroundColor: themeColors.tooltipBg,
@@ -804,21 +804,21 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
             color: themeColors.tooltipTextColor,
             fontSize: '13px'
           }}>
-            <p style={{ 
-              fontWeight: 600, 
+            <p style={{
+              fontWeight: 600,
               borderBottom: `1px solid ${themeColors.tooltipBorder}`,
               paddingBottom: '6px',
               marginBottom: '8px'
             }}>
               {data.name}
             </p>
-            <div style={{ 
+            <div style={{
               display: 'flex',
-              alignItems: 'center' 
+              alignItems: 'center'
             }}>
-              <div style={{ 
-                width: '10px', 
-                height: '10px', 
+              <div style={{
+                width: '10px',
+                height: '10px',
                 backgroundColor: data.color || data.fill,
                 borderRadius: '50%',
                 marginRight: '8px'
@@ -967,7 +967,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
           </svg>
           Status Monitoring
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Total Orders Card */}
           <SummaryCard
@@ -1030,7 +1030,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
             isActive={isFilterActive('Remark', 'Pending Verifikasi')}
           />
         </div>
-        
+
         <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-md text-xs text-blue-700 dark:text-blue-300">
           <div className="flex">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
@@ -1068,16 +1068,16 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                   barGap={0}
                   className="text-xs"
                 >
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
+                  <CartesianGrid
+                    strokeDasharray="3 3"
                     stroke={isDarkMode ? '#374151' : '#e5e7eb'}
                     horizontal={false}
                     vertical={true}
                   />
-                  <XAxis 
-                    type="category" 
+                  <XAxis
+                    type="category"
                     dataKey="name"
-                    stroke={themeColors.textColor} 
+                    stroke={themeColors.textColor}
                     tickLine={false}
                     axisLine={{ stroke: themeColors.gridColor }}
                     fontSize={11}
@@ -1086,16 +1086,16 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                     textAnchor="end"
                     height={40}
                   />
-                  <YAxis 
-                    type="number" 
-                    stroke={themeColors.textColor} 
+                  <YAxis
+                    type="number"
+                    stroke={themeColors.textColor}
                     tickLine={false}
                     axisLine={{ stroke: themeColors.gridColor }}
                     fontSize={11}
                     tickFormatter={(value) => value}
                     width={40}
                   />
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
@@ -1111,8 +1111,8 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                     }}
                     cursor={{ fill: 'transparent', opacity: 0 }}
                   />
-                  <Bar 
-                    dataKey="value" 
+                  <Bar
+                    dataKey="value"
                     fill={chartColors.primaryBlue}
                     onClick={(data) => handleChartClick('SystemId', data.name)}
                     style={{ cursor: 'pointer' }}
@@ -1133,7 +1133,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                     )}
                   >
                     {processedData.systemIdData.map((entry, index) => (
-                      <Cell 
+                      <Cell
                         key={`cell-${index}`}
                         fill="url(#batchGradient)"
                         radius={[4, 4, 0, 0]}
@@ -1142,8 +1142,8 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                   </Bar>
                   <defs>
                     <linearGradient id="batchGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={chartColors.primaryBlue} stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor={chartColors.secondaryBlue} stopOpacity={1}/>
+                      <stop offset="5%" stopColor={chartColors.primaryBlue} stopOpacity={0.8} />
+                      <stop offset="95%" stopColor={chartColors.secondaryBlue} stopOpacity={1} />
                     </linearGradient>
                   </defs>
                 </BarChart>
@@ -1174,13 +1174,13 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                   data={processedData.orderDateData}
                   margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
                 >
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
+                  <CartesianGrid
+                    strokeDasharray="3 3"
                     stroke={isDarkMode ? '#374151' : '#e5e7eb'}
                     vertical={false}
                     horizontal={true}
                   />
-                  <XAxis 
+                  <XAxis
                     dataKey="date"
                     stroke={themeColors.textColor}
                     tickLine={false}
@@ -1190,7 +1190,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                       try {
                         const date = new Date(value);
                         if (isNaN(date.getTime())) return value;
-                        
+
                         // Show only hour for better readability
                         const hour = String(date.getHours()).padStart(2, '0');
                         const day = String(date.getDate()).padStart(2, '0');
@@ -1206,7 +1206,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                     minTickGap={10}
                     dy={10}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke={themeColors.textColor}
                     tickLine={false}
                     axisLine={{ stroke: isDarkMode ? '#374151' : '#e5e7eb' }}
@@ -1215,7 +1215,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                     domain={[0, 'dataMax + 1']}
                     dx={-5}
                   />
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         try {
@@ -1228,7 +1228,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                             minute: '2-digit'
                           });
                           return (
-                            <div 
+                            <div
                               className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg text-sm"
                               style={{
                                 backgroundColor: themeColors.tooltipBg,
@@ -1244,7 +1244,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                           );
                         } catch (error) {
                           return (
-                            <div 
+                            <div
                               className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg text-sm"
                               style={{
                                 backgroundColor: themeColors.tooltipBg,
@@ -1262,7 +1262,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                       }
                       return null;
                     }}
-                    cursor={{ 
+                    cursor={{
                       stroke: isDarkMode ? '#4B5563' : '#9CA3AF',
                       strokeWidth: 1,
                       strokeDasharray: '3 3'
@@ -1270,23 +1270,23 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                   />
                   <defs>
                     <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
+                  <Line
+                    type="monotone"
+                    dataKey="count"
                     stroke="#3B82F6"
                     strokeWidth={3}
                     fill="url(#lineGradient)"
-                    dot={{ 
+                    dot={{
                       fill: '#3B82F6',
                       stroke: isDarkMode ? '#1F2937' : '#FFFFFF',
                       strokeWidth: 2,
                       r: 5
                     }}
-                    activeDot={{ 
+                    activeDot={{
                       fill: '#60A5FA',
                       stroke: isDarkMode ? '#1F2937' : '#FFFFFF',
                       strokeWidth: 3,

@@ -32,26 +32,26 @@ export const getRemarkCategory = (remark) => {
   if (!remark || remark === '' || remark === null || remark === undefined) {
     return 'na';
   }
-  
+
   const normalized = normalizeString(remark);
-  
+
   // Deteksi Cancel
-  if (normalized === 'cancel' || normalized === 'cancelled' || normalized === 'canceled' || 
-      normalized === 'in_cancel' || normalized.includes('cancel')) {
+  if (normalized === 'cancel' || normalized === 'cancelled' || normalized === 'canceled' ||
+    normalized === 'in_cancel' || normalized.includes('cancel')) {
     return 'cancel';
   }
-  
+
   // Deteksi Pending verifikasi
   if (normalized.includes('pending') && normalized.includes('verifikasi')) {
     return 'pending';
   }
-  
+
   // Deteksi Success interfaced
-  if (normalized.includes('success') || normalized.includes('berhasil') || 
-      normalized.includes('interfaced')) {
+  if (normalized.includes('success') || normalized.includes('berhasil') ||
+    normalized.includes('interfaced')) {
     return 'sukses';
   }
-  
+
   // Default category
   return 'other';
 };
@@ -70,10 +70,10 @@ const BATCH_CONFIG = {
 const initIndexedDB = () => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('MonitoringDB', 1);
-    
+
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
-    
+
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains('monitoringData')) {
@@ -89,13 +89,13 @@ const saveToIndexedDB = async (cacheKey, data) => {
     const db = await initIndexedDB();
     const transaction = db.transaction(['monitoringData'], 'readwrite');
     const store = transaction.objectStore('monitoringData');
-    
+
     await store.put({
       cacheKey,
       data,
       timestamp: Date.now()
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error saving to IndexedDB:', error);
@@ -108,7 +108,7 @@ const getFromIndexedDB = async (cacheKey) => {
     const db = await initIndexedDB();
     const transaction = db.transaction(['monitoringData'], 'readonly');
     const store = transaction.objectStore('monitoringData');
-    
+
     const request = store.get(cacheKey);
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
@@ -133,10 +133,10 @@ const cleanupExpiredCache = async () => {
     const transaction = db.transaction(['monitoringData'], 'readwrite');
     const store = transaction.objectStore('monitoringData');
     const index = store.index('timestamp');
-    
+
     const expiredTimestamp = Date.now() - BATCH_CONFIG.CACHE_EXPIRY;
     const request = index.openCursor(IDBKeyRange.upperBound(expiredTimestamp));
-    
+
     return new Promise((resolve) => {
       request.onsuccess = (event) => {
         const cursor = event.target.result;
@@ -183,18 +183,18 @@ export function useMonitoring() {
   const transformData = useCallback((data) => {
     const transformedData = [];
     const chunkSize = BATCH_CONFIG.TRANSFORM_CHUNK_SIZE;
-    
+
     // Proses transformasi dalam chunk
     for (let i = 0; i < data.length; i += chunkSize) {
       const chunk = data.slice(i, i + chunkSize);
       const transformedChunk = chunk.map(row => ({
         ...row,
-        SystemRefId: cleanSystemRefId(row.SystemRefId),
+        'Order Number': cleanSystemRefId(row['Order Number']),
         Remark: row.Remark || null
       }));
       transformedData.push(...transformedChunk);
     }
-    
+
     return transformedData;
   }, []);
 
@@ -203,21 +203,21 @@ export function useMonitoring() {
     try {
       setIsLoading(true);
       const apiUrl = getApiUrl();
-      
+
       // Cek cache terlebih dahulu
       const cacheKey = idsArray.sort().join(',');
       const cachedData = await getFromIndexedDB(cacheKey);
-      
+
       if (cachedData) {
         setMonitoringData(cachedData);
         return true;
       }
-      
+
       // Proses data dalam batch yang dioptimalkan
       const totalBatches = Math.ceil(idsArray.length / BATCH_CONFIG.BATCH_SIZE);
       let allData = [];
       let processedCount = 0;
-      
+
       // Buat promise untuk setiap batch
       const batchPromises = [];
       for (let i = 0; i < totalBatches; i += BATCH_CONFIG.PARALLEL_BATCHES) {
@@ -225,7 +225,7 @@ export function useMonitoring() {
           const startIdx = (i + j) * BATCH_CONFIG.BATCH_SIZE;
           const endIdx = Math.min(startIdx + BATCH_CONFIG.BATCH_SIZE, idsArray.length);
           const batchIds = idsArray.slice(startIdx, endIdx);
-          
+
           batchPromises.push(
             axios.post(
               `${apiUrl}/query/monitoring`,
@@ -235,23 +235,23 @@ export function useMonitoring() {
           );
         }
       }
-      
+
       // Proses semua batch secara paralel
       const batchResults = await Promise.all(batchPromises);
-      
+
       // Transformasi data secara bertahap
       let currentIndex = 0;
       const processNextChunk = () => {
         const chunkSize = BATCH_CONFIG.TRANSFORM_CHUNK_SIZE;
         const endIndex = Math.min(currentIndex + chunkSize, batchResults.length);
-        
+
         const chunk = batchResults.slice(currentIndex, endIndex)
           .flatMap(response => response.data.data.results || []);
-        
+
         const transformedChunk = transformData(chunk);
         allData = [...allData, ...transformedChunk];
         processedCount += chunk.length;
-        
+
         // Update progress
         const progress = Math.round((endIndex / batchResults.length) * 100);
         setNotification({
@@ -259,9 +259,9 @@ export function useMonitoring() {
           message: `Memproses Data... ${progress}% (${processedCount}/${idsArray.length} Order)`,
           type: 'info'
         });
-        
+
         currentIndex = endIndex;
-        
+
         if (currentIndex < batchResults.length) {
           // Gunakan requestAnimationFrame untuk transformasi berikutnya
           requestAnimationFrame(processNextChunk);
@@ -272,26 +272,26 @@ export function useMonitoring() {
             results: allData,
             summaryData
           };
-          
+
           // Simpan ke cache
           saveToIndexedDB(cacheKey, enrichedData);
           setMonitoringData(enrichedData);
-          
+
           // Bersihkan cache yang expired
           cleanupExpiredCache();
         }
       };
-      
+
       // Mulai proses transformasi
       processNextChunk();
-      
+
       return true;
     } catch (err) {
       console.error('Error fetching monitoring data:', err);
-      const errorMessage = err.response?.data?.details || 
-                         err.response?.data?.error || 
-                         err.message || 
-                         'Terjadi kesalahan saat memproses data';
+      const errorMessage = err.response?.data?.details ||
+        err.response?.data?.error ||
+        err.message ||
+        'Terjadi kesalahan saat memproses data';
       setError(errorMessage);
       return false;
     } finally {
@@ -310,20 +310,20 @@ export function useMonitoring() {
       cancel: 0,
       na: 0
     };
-    
+
     // Hitung jumlah untuk setiap kategori
     results.forEach(row => {
       // Ambil nilai remark (termasuk dari localStorage jika ada)
       const remarkValue = getRemarkValue(row);
       const category = getRemarkCategory(remarkValue);
-      
+
       // Increment counter untuk kategori yang sesuai
       if (counts[category] !== undefined) {
         counts[category]++;
       }
-      
-      // Special case: jika Status_Interfaced adalah 'Yes', tambahkan ke sukses
-      if (row.Status_Interfaced === 'Yes') {
+
+      // Special case: jika Status Interfaced adalah 'Yes', tambahkan ke sukses
+      if (row['Status Interfaced'] === 'Yes') {
         counts.sukses++;
       }
     });
