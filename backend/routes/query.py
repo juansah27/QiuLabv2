@@ -283,7 +283,25 @@ def run_monitoring_query():
                 # OPTIMIZED VERSION: Removed slow EXISTS subqueries
                 monitoring_query = f"""
                 SELECT
-                    so.SystemId,
+                CASE 
+                WHEN so.SystemId ='MPSH' THEN 'SHOPEE'
+                WHEN so.SystemId ='MSTP' THEN 'TOKOPEDIA'
+                WHEN so.SystemId = 'GCOOP' THEN 'GCOOP'
+                WHEN so.SystemId = 'Jubelio' THEN 'JUBELIO'
+                WHEN so.SystemId = 'MPJD' THEN 'JD.ID'
+                WHEN so.SystemId = 'MPLZ' THEN 'LAZADA'
+                WHEN so.SystemId = 'Other' THEN 'OTHER'
+                WHEN so.SystemId = 'SS' THEN 'SISTERSEL'
+                WHEN so.SystemId = 'MPBI' THEN 'BLIBLI'
+                WHEN so.SystemId = 'GDTech' THEN 'GDTECH'
+                WHEN so.SystemId = 'MPTS' THEN 'TIKTOK'
+                WHEN so.SystemId = 'SHPY' THEN 'SHOPIFY'
+                WHEN so.SystemId = 'MPZR' THEN 'ZALORA'
+                WHEN so.SystemId = 'MPUP' THEN 'CMS FLEXO'
+                WHEN so.SystemId = 'MPGN' THEN 'GINEE'
+                WHEN so.SystemId = 'MPDS' THEN 'DESTY'
+                else 'NEW CHANNEL'
+                END AS SalesChannel,
                     CASE 
                         WHEN so.MerchantName = 'SH680AFFCF5F1503000192BFEF' THEN 'AMAN MAJU NUSANTARA'
                         WHEN so.MerchantName = 'SH680AFFA3CFF47E0001ABE2F8' THEN 'AMAN MAJU NUSANTARA'
@@ -296,7 +314,7 @@ def run_monitoring_query():
                         WHEN so.MerchantName = 'SH680A67FDE21B8400014849AB' THEN 'AMAN MAJU NUSANTARA'
                         WHEN so.MerchantName = 'MOTHER OF PEARL' THEN 'MOP'
                         ELSE so.MerchantName
-                    END AS MerchantName, 
+                    END AS Brand, 
                     so.SystemRefId,
                     so.OrderStatus,
                     so.Awb,
@@ -321,19 +339,29 @@ def run_monitoring_query():
                         ELSE 'Out of Range'
                     END AS Batch,
                     CASE 
-                        WHEN MAX(api.PRTNUM) IS NULL THEN ''
-                        WHEN MAX(prt.prtnum) IS NULL THEN 'Invalid SKU'
-                        ELSE ''                                     
-                    END AS [Validasi SKU],
+                    WHEN COUNT(DISTINCT api.PRTNUM) = 0 THEN ''
+                    WHEN COUNT(DISTINCT api.PRTNUM) 
+                       > COUNT(DISTINCT prt.prtnum) 
+                    THEN 
+                        'Invalid SKU ' + 
+                        STRING_AGG(
+                            CASE 
+                                WHEN prt.prtnum IS NULL THEN api.PRTNUM 
+                                ELSE NULL 
+                            END,
+                            ', '
+                        )
+                    ELSE ''
+                END AS [Validasi SKU],
                     CASE 
                         WHEN DATEDIFF(MINUTE, so.OrderDate, GETDATE()) > 30 THEN 'Lebih Dari 1 jam'
                         ELSE 'Kurang Dari 1 jam'
                     END AS [Status_Durasi],
-                    CAST('' AS NVARCHAR(MAX)) AS ItemIds,
+                    STRING_AGG(api.PRTNUM, ', ') AS ItemIds,
                     so.OrderDate,
                     so.DtmCrt,
-                    so.DeliveryMode,    
-                    so.importlog,
+                    api.ENTDTE,
+                    so.TransporterCode AS Transporter,
                     so.FulfilledByFlexo,
                     MAX(ol.moddte) AS AddDate,  
                     CASE 
@@ -355,12 +383,12 @@ def run_monitoring_query():
                     so.SystemRefId,
                     so.MerchantName,
                     so.OrderDate,
-                    so.DtmCrt, 
+                    so.DtmCrt,
+                    api.ENTDTE,
                     so.OrderStatus,
                     so.Awb,
-                    so.DeliveryMode,
+                    so.TransporterCode,
                     so.Origin,
-                    so.ImportLog,
                     so.FulfilledByFlexo,
                     so.OrderedById
                 OPTION (MAXDOP 4, OPTIMIZE FOR UNKNOWN)
