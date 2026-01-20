@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Button, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
+import {
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   DialogActions,
   TextField,
   Typography,
@@ -22,7 +22,7 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
   const [updateCount, setUpdateCount] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   // Reset state ketika modal dibuka/ditutup
   useEffect(() => {
     if (open) {
@@ -45,7 +45,7 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
       // Split input berdasarkan baris baru
       const lines = inputText.trim().split('\n');
       const parsedData = [];
-      
+
       // Proses setiap baris
       lines.forEach((line, index) => {
         // Coba deteksi ID dan remark
@@ -53,9 +53,9 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
         // 1. ID<tab>Remark
         // 2. ID<spasi>Remark
         // 3. ID,Remark
-        
+
         let id, remark;
-        
+
         if (line.includes('\t')) {
           // Format tab-separated
           [id, remark] = line.split('\t', 2);
@@ -68,32 +68,32 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
           if (parts.length < 2) {
             throw new Error(`Baris ${index + 1} tidak memiliki format yang benar`);
           }
-          
-          id = parts[0]; 
+
+          id = parts[0];
           remark = parts.slice(1).join(' ');
         }
-        
+
         // Bersihkan whitespace
         id = id.trim();
         remark = (remark || '').trim();
-        
+
         // Normalisasi format remark untuk konsistensi
         if (remark.toLowerCase().includes('cancel')) {
           // Format konsisten untuk nilai Cancel
           remark = normalizeRemarkValue(remark);
         }
-        
+
         if (!id) {
           throw new Error(`Baris ${index + 1} tidak memiliki ID`);
         }
-        
+
         if (!remark) {
           throw new Error(`Baris ${index + 1} tidak memiliki Remark`);
         }
-        
+
         // Validasi apakah ID ada di data
-        const idExists = data.some(item => item.SystemRefId === id);
-        
+        const idExists = data.some(item => (item['Order Number'] || item.SystemRefId) === id);
+
         parsedData.push({
           id,
           remark,
@@ -101,7 +101,7 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
           lineNumber: index + 1
         });
       });
-      
+
       setPreviewData(parsedData);
       setUpdateCount(parsedData.filter(item => item.exists).length);
       setError('');
@@ -115,21 +115,21 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
   // Fungsi untuk normalisasi format remark
   const normalizeRemarkValue = (value) => {
     const lowerValue = value.toLowerCase().trim();
-    
+
     // Konversi beberapa variasi 'cancel' ke format standar
     if (lowerValue === 'cancel' || lowerValue === 'cancelled' || lowerValue === 'canceled') {
       return 'Cancel';
     }
-    
+
     if (lowerValue === 'in_cancel' || lowerValue.includes('in cancel')) {
       return 'IN_Cancel';
     }
-    
+
     // Konversi beberapa variasi 'pending verifikasi' ke format standar
     if (lowerValue.includes('pending') && lowerValue.includes('verifikasi')) {
       return 'Pending Verifikasi';
     }
-    
+
     // Jika tidak ada format khusus, kembalikan nilai asli
     return value;
   };
@@ -140,7 +140,7 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
       setError('Tidak ada data untuk diupdate');
       return;
     }
-    
+
     try {
       // Filter hanya yang ID-nya ada di data
       const updatesData = previewData
@@ -149,18 +149,18 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
           id: item.id,
           remark: item.remark
         }));
-        
+
       if (updatesData.length === 0) {
         setError('Tidak ada ID yang cocok dengan data');
         return;
       }
-      
+
       // Panggil callback untuk update data
       onUpdate(updatesData);
-      
+
       // Tampilkan pesan sukses
       setSuccess(`Berhasil memperbarui ${updatesData.length} data`);
-      
+
       // Reset preview data
       setPreviewData([]);
       setInputText('');
@@ -174,7 +174,7 @@ const BulkRemarkUpdate = ({ open, onClose, onUpdate, data = [] }) => {
     try {
       const text = await navigator.clipboard.readText();
       setInputText(text);
-      
+
       // Proses langsung setelah paste
       setTimeout(() => {
         processInputText();
@@ -207,7 +207,7 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
         // Fallback menggunakan document.execCommand
         const textArea = document.createElement('textarea');
         textArea.value = getTemplateText();
-        
+
         // Menyembunyikan textarea
         textArea.style.position = 'fixed';
         textArea.style.top = '0';
@@ -219,18 +219,18 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
         textArea.style.outline = 'none';
         textArea.style.boxShadow = 'none';
         textArea.style.background = 'transparent';
-        
+
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         const successful = document.execCommand('copy');
         if (successful) {
           setSuccess('Template berhasil disalin ke clipboard');
         } else {
           setError('Gagal menyalin template');
         }
-        
+
         document.body.removeChild(textArea);
       }
     } catch (error) {
@@ -239,8 +239,8 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={onClose}
       maxWidth="md"
       fullWidth
@@ -251,10 +251,10 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
         }
       }}
     >
-      <DialogTitle 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           bgcolor: 'primary.main',
           color: 'primary.contrastText',
@@ -265,20 +265,20 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
         <Typography variant="h6" component="div">
           Update Remark Massal
         </Typography>
-        <IconButton 
-          edge="end" 
-          color="inherit" 
-          onClick={onClose} 
+        <IconButton
+          edge="end"
+          color="inherit"
+          onClick={onClose}
           aria-label="close"
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent sx={{ px: 3, py: 3 }}>
         {success && (
-          <Alert 
-            severity="success" 
+          <Alert
+            severity="success"
             sx={{ mb: 2 }}
             onClose={() => setSuccess('')}
           >
@@ -286,15 +286,15 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
           </Alert>
         )}
         {error && (
-          <Alert 
-            severity="error" 
+          <Alert
+            severity="error"
             sx={{ mb: 2 }}
             onClose={() => setError('')}
           >
             {error}
           </Alert>
         )}
-        
+
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" gutterBottom>
             Petunjuk Penggunaan:
@@ -311,18 +311,18 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
           <Typography variant="body2" color="text.secondary" paragraph>
             4. Klik "Update" untuk menerapkan perubahan
           </Typography>
-          
+
           <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-            <Button 
-              size="small" 
+            <Button
+              size="small"
               startIcon={<ContentPasteIcon />}
               onClick={handlePasteFromClipboard}
               variant="outlined"
             >
               Tempel dari Clipboard
             </Button>
-            <Button 
-              size="small" 
+            <Button
+              size="small"
               onClick={copyTemplate}
               variant="outlined"
             >
@@ -330,7 +330,7 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
             </Button>
           </Box>
         </Box>
-        
+
         <TextField
           label="Masukkan daftar ID dan Remark"
           multiline
@@ -343,8 +343,8 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
           sx={{ mb: 2 }}
         />
 
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           color="primary"
           onClick={processInputText}
           disabled={!inputText.trim()}
@@ -352,7 +352,7 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
         >
           Proses Data
         </Button>
-        
+
         {previewData.length > 0 && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -361,10 +361,10 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {updateCount} data dapat diupdate dari {previewData.length} entri
             </Typography>
-            
-            <Box 
-              sx={{ 
-                maxHeight: '200px', 
+
+            <Box
+              sx={{
+                maxHeight: '200px',
                 overflowY: 'auto',
                 border: 1,
                 borderColor: 'divider',
@@ -373,21 +373,21 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
               }}
             >
               {previewData.map((item, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     py: 0.5,
                     borderBottom: index < previewData.length - 1 ? '1px solid' : 'none',
                     borderColor: 'divider'
                   }}
                 >
-                  <Box 
-                    sx={{ 
-                      width: '24px', 
-                      mr: 1, 
-                      display: 'flex', 
+                  <Box
+                    sx={{
+                      width: '24px',
+                      mr: 1,
+                      display: 'flex',
                       alignItems: 'center',
                       color: item.exists ? 'success.main' : 'error.main'
                     }}
@@ -399,30 +399,30 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
                     )}
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Typography 
-                      variant="body2" 
-                      component="span" 
-                      sx={{ 
+                    <Typography
+                      variant="body2"
+                      component="span"
+                      sx={{
                         fontWeight: 'medium',
                         color: item.exists ? 'text.primary' : 'text.disabled'
                       }}
                     >
                       {item.id}
                     </Typography>
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       component="span"
-                      sx={{ 
+                      sx={{
                         mx: 1,
                         color: item.exists ? 'text.primary' : 'text.disabled'
                       }}
                     >
                       →
                     </Typography>
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       component="span"
-                      sx={{ 
+                      sx={{
                         color: item.exists ? 'text.primary' : 'text.disabled'
                       }}
                     >
@@ -442,12 +442,12 @@ SHOPEE250422URSNHUPS\tPending Verifikasi`;
           </Box>
         )}
       </DialogContent>
-      
+
       <DialogActions sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider' }}>
         <Button onClick={onClose} variant="outlined">
           Tutup
         </Button>
-        <Button 
+        <Button
           onClick={handleProcessUpdate}
           variant="contained"
           color="primary"

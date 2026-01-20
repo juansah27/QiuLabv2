@@ -1375,7 +1375,7 @@ const QueryResultTable = ({
     const updatedRemarks = { ...remarks };
     let successCount = 0;
     for (const update of updates) {
-      const matchingRow = data.find(row => row.SystemRefId === update.id);
+      const matchingRow = data.find(row => (row['Order Number'] || row.SystemRefId) === update.id);
       if (matchingRow) {
         try {
           await api.post('/monitoring/remark', {
