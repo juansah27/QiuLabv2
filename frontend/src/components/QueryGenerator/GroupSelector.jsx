@@ -19,6 +19,8 @@ const QUERY_GROUPS = [
   { id: 'query_so_sol', label: 'Query SO & SOL' },
   { id: 'query_xml_xml_line', label: 'Query XML dan XML Line' },
   { id: 'line_live', label: 'Line Live' },
+  { id: 'manifest_order', label: 'Manifest Order' },
+  { id: 'data_cekin', label: 'Data Cekin' },
 ];
 
 const GroupSelector = ({ selectedGroup, onGroupChange }) => {
@@ -27,7 +29,7 @@ const GroupSelector = ({ selectedGroup, onGroupChange }) => {
       <RadioGroup
         value={selectedGroup}
         onValueChange={onGroupChange}
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-2"
       >
         {QUERY_GROUPS.map((group) => (
           <Card

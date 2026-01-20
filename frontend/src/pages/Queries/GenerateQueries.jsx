@@ -29,6 +29,8 @@ const GenerateQueries = () => {
   const [targetDate, setTargetDate] = useState(getDateOffset(-5));
   const [skuLama, setSkuLama] = useState('');
   const [skuBaru, setSkuBaru] = useState('');
+  const [startDate, setStartDate] = useState(getDateOffset(-1)); // Default query H-1
+  const [endDate, setEndDate] = useState(getDateOffset(0)); // Default today
   const [generatedSql, setGeneratedSql] = useState('');
   const [error, setError] = useState('');
   const [outputFormat, setOutputFormat] = useState('in_clause');
@@ -85,7 +87,7 @@ const GenerateQueries = () => {
 
   const handleCopy = async () => {
     if (!generatedSql) return;
-    
+
     try {
       // Cek apakah Clipboard API tersedia
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -99,17 +101,17 @@ const GenerateQueries = () => {
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         const successful = document.execCommand('copy');
         if (!successful) {
           throw new Error('Gagal menyalin menggunakan execCommand');
         }
-        
+
         document.body.removeChild(textArea);
       }
-      
+
       setCopySuccess(true);
-      
+
       // Reset pesan sukses setelah 2 detik
       setTimeout(() => {
         setCopySuccess(false);
@@ -122,37 +124,57 @@ const GenerateQueries = () => {
 
   const validateInput = () => {
     // Validasi format ID
-    if (!ids.trim()) {
-      setError('Daftar ID tidak boleh kosong');
-      return false;
+    // Validasi ID (skip jika manifest_order atau data_cekin)
+    if (selectedGroup !== 'manifest_order' && selectedGroup !== 'data_cekin') {
+      if (!ids.trim()) {
+        setError('Daftar ID tidak boleh kosong');
+        return false;
+      }
+
+      // Split by comma or newline
+      const idList = ids.split(/[,\n]/).map(id => id.trim()).filter(id => id);
+
+      if (idList.length === 0) {
+        setError('Daftar ID tidak boleh kosong');
+        return false;
+      }
+
+      // Validasi jumlah maksimal ID (kecuali untuk grup query_in_custom)
+      if (selectedGroup !== 'query_in_custom' && idList.length > 10000) {
+        setError('Maksimal 10000 ID diperbolehkan');
+        return false;
+      }
+
+      // Validasi format alfanumerik (dengan spasi)
+      const invalidIds = idList.filter(id => !/^[a-zA-Z0-9-_\/+.&\s@#()\[\]{}]+$/.test(id));
+      if (invalidIds.length > 0) {
+        setError(`ID harus alfanumerik (menerima karakter -, _, /, +, ., &, @, #, (, ), [, ], {, }, dan spasi): ${invalidIds.join(', ')}`);
+        return false;
+      }
     }
 
-    // Split by comma or newline
-    const idList = ids.split(/[,\n]/).map(id => id.trim()).filter(id => id);
-    
-    if (idList.length === 0) {
-      setError('Daftar ID tidak boleh kosong');
-      return false;
-    }
-
-    // Validasi jumlah maksimal ID (kecuali untuk grup query_in_custom)
-    if (selectedGroup !== 'query_in_custom' && idList.length > 10000) {
-      setError('Maksimal 10000 ID diperbolehkan');
-      return false;
-    }
-
-    // Validasi format alfanumerik (dengan spasi)
-    const invalidIds = idList.filter(id => !/^[a-zA-Z0-9-_\/+.&\s@#()\[\]{}]+$/.test(id));
-    if (invalidIds.length > 0) {
-      setError(`ID harus alfanumerik (menerima karakter -, _, /, +, ., &, @, #, (, ), [, ], {, }, dan spasi): ${invalidIds.join(', ')}`);
-      return false;
-    }
 
 
     // Validasi target date untuk Update DtmCrt dan Entdte
     if (selectedGroup === 'update_dtmcrt_entdte' && !targetDate.trim()) {
       setError('Target date diperlukan untuk grup Update DtmCrt dan Entdte');
       return false;
+    }
+
+    // Validasi tanggal untuk Manifest Order dan Data Cekin
+    if (selectedGroup === 'manifest_order' || selectedGroup === 'data_cekin') {
+      if (!startDate) {
+        setError('Start Date harus diisi');
+        return false;
+      }
+      if (!endDate) {
+        setError('End Date harus diisi');
+        return false;
+      }
+      if (startDate > endDate) {
+        setError('Start Date tidak boleh lebih besar dari End Date');
+        return false;
+      }
     }
 
     // Validasi SKU untuk Replace SKU
@@ -184,7 +206,7 @@ const GenerateQueries = () => {
   const handleGenerateSql = async () => {
     setError('');
     setIsGenerating(true);
-    
+
     if (!validateInput()) {
       setIsGenerating(false);
       return;
@@ -193,10 +215,10 @@ const GenerateQueries = () => {
     try {
       // Parse IDs dan proses untuk mengganti spasi dengan "-"
       const idList = ids.split(/[,\n]/).map(id => processId(id)).filter(id => id);
-      
+
       // Get template for selected group
       let template = getTemplateForGroup(selectedGroup);
-      
+
       // Khusus untuk query_in_custom, sesuaikan dengan format output
       if (selectedGroup === 'query_in_custom') {
         if (outputFormat === 'where_clause') {
@@ -204,10 +226,10 @@ const GenerateQueries = () => {
           template = '{IDS}';
         }
       }
-      
+
       // Replace placeholders with actual values
       let sql = template;
-      
+
       // Replace ID placeholders
       if (outputFormat === 'where_clause') {
         sql = idList.map((id, idx) => {
@@ -217,7 +239,7 @@ const GenerateQueries = () => {
       } else {
         sql = sql.replace(/\{IDS\}/g, idList.map(id => `\'${id}\'`).join(','));
       }
-      
+
 
       // Replace target date if needed
       if (selectedGroup === 'update_dtmcrt_entdte' && targetDate) {
@@ -230,12 +252,16 @@ const GenerateQueries = () => {
         const skuLamaList = skuLama.split(/[,\n]/).map(sku => processId(sku)).filter(sku => sku);
         const skuLamaFormatted = skuLamaList.map(sku => `\'${sku}\'`).join(',');
         sql = sql.replace(/\{SKULAMA\}/g, skuLamaFormatted);
-        
+
         // Process SKU Baru (new SKU - single value)
         const skuBaruProcessed = processId(skuBaru);
         sql = sql.replace(/\{SKUBARU\}/g, skuBaruProcessed);
+      } else if (selectedGroup === 'manifest_order' || selectedGroup === 'data_cekin') {
+        // Replace StartDate & EndDate
+        sql = sql.replace(/\{START_DATE\}/g, startDate);
+        sql = sql.replace(/\{END_DATE\}/g, endDate);
       }
-      
+
       setGeneratedSql(sql);
     } catch (err) {
       setError('Gagal generate SQL: ' + err.message);
@@ -267,9 +293,9 @@ const GenerateQueries = () => {
                   <CardDescription>Choose query type</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <GroupSelector 
-                    selectedGroup={selectedGroup} 
-                    onGroupChange={handleGroupChange} 
+                  <GroupSelector
+                    selectedGroup={selectedGroup}
+                    onGroupChange={handleGroupChange}
                   />
                 </CardContent>
               </Card>
@@ -281,8 +307,8 @@ const GenerateQueries = () => {
                   <CardDescription>Enter IDs & parameters</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <IdInput 
-                    ids={ids} 
+                  <IdInput
+                    ids={ids}
                     yardLoc={yardLoc}
                     marketplace={marketplace}
                     targetDate={targetDate}
@@ -299,6 +325,12 @@ const GenerateQueries = () => {
                     onSkuLamaChange={handleSkuLamaChange}
                     onSkuBaruChange={handleSkuBaruChange}
                     isCustomInQuery={selectedGroup === 'query_in_custom'}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    showDateRange={selectedGroup === 'manifest_order' || selectedGroup === 'data_cekin'}
+                    showIds={selectedGroup !== 'manifest_order' && selectedGroup !== 'data_cekin'}
                   />
                 </CardContent>
               </Card>
@@ -313,16 +345,16 @@ const GenerateQueries = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <OutputFormatSelector 
+                    <OutputFormatSelector
                       format={outputFormat}
                       fieldName={fieldName}
                       onFormatChange={handleOutputFormatChange}
                     />
-                    
+
                     {outputFormat === 'where_clause' && (
                       <div>
-                        <label 
-                          htmlFor="field-name" 
+                        <label
+                          htmlFor="field-name"
                           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                         >
                           Nama Kolom
@@ -352,16 +384,16 @@ const GenerateQueries = () => {
 
             {/* Generate Button */}
             <div className="flex gap-3">
-              <Button 
+              <Button
                 onClick={handleGenerateSql}
                 disabled={isGenerating}
                 className="flex-1 h-12 text-base bg-primary hover:bg-primary/90"
               >
                 {isGenerating ? 'Generating...' : 'Generate SQL'}
               </Button>
-              
+
               {generatedSql && (
-                <Button 
+                <Button
                   onClick={handleCopy}
                   variant="outline"
                   className={cn(
@@ -394,8 +426,8 @@ const GenerateQueries = () => {
                   <CardDescription>Your query is ready</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SqlOutput 
-                    sql={generatedSql} 
+                  <SqlOutput
+                    sql={generatedSql}
                     showCopyButton={false}
                   />
                 </CardContent>

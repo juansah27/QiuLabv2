@@ -14,45 +14,53 @@ const MARKETPLACE_OPTIONS = [
   { value: 'ZALOR', label: 'ZALOR' },
 ];
 
-const IdInput = ({ 
-  ids, 
-  yardLoc, 
+const IdInput = ({
+  ids,
+  yardLoc,
   marketplace,
   targetDate,
   skuLama,
   skuBaru,
-  showYardLoc, 
+  showYardLoc,
   showMarketplace,
   showTargetDate,
   showSkuReplace,
-  onIdsChange, 
-  onYardLocChange, 
+  onIdsChange,
+  onYardLocChange,
   onMarketplaceChange,
   onTargetDateChange,
   onSkuLamaChange,
   onSkuBaruChange,
-  isCustomInQuery = false 
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  showDateRange = false,
+  showIds = true,
+  isCustomInQuery = false
 }) => {
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="id-list">
-          Daftar ID
-        </Label>
-        <Textarea
-          id="id-list"
-          rows="6"
-          placeholder="Masukkan ID (SystemRefId, ORDNUM, atau SKU), pisahkan dengan koma atau newline."
-          value={ids}
-          onChange={(e) => onIdsChange(e.target.value)}
-          className="font-mono"
-        />
-        <p className="text-sm text-muted-foreground">
-          {isCustomInQuery 
-            ? "Masukkan ID alfanumerik (menerima karakter -, _, /, dan spasi). Tidak ada batasan jumlah maksimal." 
-            : "Masukkan ID alfanumerik (menerima karakter -, _, /, dan spasi). Maksimal 1000 ID."}
-        </p>
-      </div>
+      {showIds && (
+        <div className="space-y-2">
+          <Label htmlFor="id-list">
+            Daftar ID
+          </Label>
+          <Textarea
+            id="id-list"
+            rows="6"
+            placeholder="Masukkan ID (SystemRefId, ORDNUM, atau SKU), pisahkan dengan koma atau newline."
+            value={ids}
+            onChange={(e) => onIdsChange(e.target.value)}
+            className="font-mono"
+          />
+          <p className="text-sm text-muted-foreground">
+            {isCustomInQuery
+              ? "Masukkan ID alfanumerik (menerima karakter -, _, /, dan spasi). Tidak ada batasan jumlah maksimal."
+              : "Masukkan ID alfanumerik (menerima karakter -, _, /, dan spasi). Maksimal 1000 ID."}
+          </p>
+        </div>
+      )}
 
       {showYardLoc && (
         <div className="space-y-2">
@@ -124,7 +132,7 @@ const IdInput = ({
               className="font-mono"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="sku-baru">
               SKU Baru (pengganti)
@@ -138,6 +146,33 @@ const IdInput = ({
             />
           </div>
         </>
+      )}
+
+      {showDateRange && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="start-date">
+              Start Date
+            </Label>
+            <Input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => onStartDateChange(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="end-date">
+              End Date
+            </Label>
+            <Input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => onEndDateChange(e.target.value)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -160,6 +195,12 @@ IdInput.propTypes = {
   onTargetDateChange: PropTypes.func.isRequired,
   onSkuLamaChange: PropTypes.func.isRequired,
   onSkuBaruChange: PropTypes.func.isRequired,
+  startDate: PropTypes.string,
+  endDate: PropTypes.string,
+  onStartDateChange: PropTypes.func,
+  onEndDateChange: PropTypes.func,
+  showDateRange: PropTypes.bool,
+  showIds: PropTypes.bool,
   isCustomInQuery: PropTypes.bool
 };
 

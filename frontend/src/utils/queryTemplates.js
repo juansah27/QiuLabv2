@@ -257,6 +257,51 @@ FROM [SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
 LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
     ON LXML.ORDNUM = hxml.ORDNUM
 WHERE hxml.ordnum IN ({IDS});`,
+
+  // Manifest Order
+  manifest_order: `SELECT 
+    so.SystemId,
+    mh.ManifestNumber,
+    mo.AWB,
+    mo.OrderNumber,
+    mo.SystemRefID,
+    mo.CreatedAt,
+    mo.Transporter,
+    mh.HandOverDate,
+    mh.CreatedBy
+FROM FlexoWebApp.dbo.ManifestOrder AS mo WITH (NOLOCK)
+LEFT JOIN FlexoWebApp.dbo.ManifestHeader AS mh WITH (NOLOCK)
+    ON mo.ManifestID = mh.ID
+LEFT JOIN Flexo_Db.dbo.SalesOrder AS so WITH (NOLOCK)
+    ON mo.SystemRefID = so.SystemRefId
+WHERE mo.CreatedAt >= '{START_DATE}'
+  AND mo.CreatedAt < '{END_DATE}'
+  AND so.SystemId <> 'MPUP'
+ORDER BY mo.CreatedAt ASC;`,
+
+  // Data Cekin
+  data_cekin: `SELECT distinct ols.ORDNUM as OrderNumber		
+		,so.OrderStatus
+      ,ols.[ORDLIN]		
+      ,case when olr.Ordnum is not null then olr.[ItemIDReplace] else ols.PRTNUM end as ItemID		
+      ,case when olr.Ordnum is not null then olr.UserCheckin else ols.DISTRO_TYP  end as UPC		
+      , case when olr.Ordnum is not null then olr.[QtyReplace] else ols.ORDQTY end as OrderQty		
+	  ,case when olr.Ordnum is not null then olr.QtyCheckin else ols.TOT_PLN_PAL_QTY end as CheckInQty	
+      , case when olr.Ordnum is not null then olr.CheckinDate else ols.[MANDTE]  end  as CheckinDate		
+	  ,Case	
+	  when olr.Isreplacement=1 then 'REPLACE'	
+	  when TOT_PLN_PAL_QTY = ORDQTY then 'OK'	
+	  when olr.QtyCheckin=QtyReplace then 'OK'	
+	  else 'ERROR' end as QtyCheck	
+	  ,'Online' as 'OrderType'	
+	  ,olr.IsReplacement	
+	  ,olr.ItemID as 'ItemOriginal'	
+	  ,olr.Qty as 'QtyOriginal'	
+  FROM [SPIDSTGEXML].[dbo].[ORDER_LINE_SEG] ols WITH(NOLOCK)		
+  LEFT OUTER JOIN [SPIDSTGEXML].[dbo].[ORDER_LINE_REPLACE] olr WITH(NOLOCK) on ols.ORDNUM= olr.Ordnum and ols.ORDLIN = olr.Ordlin 		
+  left outer join Flexo_db.dbo.SalesOrder so WITH(NOLOCK) on ols.ORDNUM=so.SystemRefId		
+  Left outer join Flexo_db.dbo.salesorderprint sp WITH(NOLOCK) on ols.ordnum = sp.systemrefid		
+  where (ols.MANDTE >='{START_DATE}' and ols.MANDTE < '{END_DATE}') and so.SystemId <>'MPUP'`,
 };
 
 /**
