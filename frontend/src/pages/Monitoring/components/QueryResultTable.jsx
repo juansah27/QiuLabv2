@@ -535,7 +535,7 @@ const QueryResultTable = ({
     const loadInitialData = async () => {
       try {
         // Load remarks dari API
-        const response = await api.get('/api/monitoring/remarks');
+        const response = await api.get('/monitoring/remarks');
         if (response.data.status === 'success') {
           setRemarks(response.data.data || {});
         }
@@ -1522,7 +1522,7 @@ const QueryResultTable = ({
       });
 
       // Salin ke clipboard, cek dulu apakah Clipboard API tersedia di secure context
-      if (navigator.clipboard && window.isSecureContext) {
+      if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
         navigator.clipboard.writeText(csvContent)
           .then(() => {
             showNotification('✅ Kolom berhasil disalin ke clipboard!');
@@ -2213,8 +2213,8 @@ const QueryResultTable = ({
                             >
                               <button
                                 className={`p-0.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded ${columnFilters[column.id] && columnFilters[column.id].length > 0
-                                    ? 'text-blue-500 dark:text-blue-400'
-                                    : 'text-gray-400 dark:text-gray-500'
+                                  ? 'text-blue-500 dark:text-blue-400'
+                                  : 'text-gray-400 dark:text-gray-500'
                                   }`}
                                 onClick={(e) => {
                                   e.stopPropagation(); // Prevent column selection
@@ -2305,8 +2305,8 @@ const QueryResultTable = ({
                   onClick={() => handlePageChange(0)}
                   disabled={currentPage === 0}
                   className={`px-1.5 py-0.5 text-xs rounded-md ${currentPage === 0
-                      ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
-                      : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+                    ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
+                    : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
                     } ${THEME_TRANSITIONS.default}`}
                 >
                   &laquo;
@@ -2315,8 +2315,8 @@ const QueryResultTable = ({
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 0}
                   className={`px-1.5 py-0.5 text-xs rounded-md ${currentPage === 0
-                      ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
-                      : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+                    ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
+                    : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
                     } ${THEME_TRANSITIONS.default}`}
                 >
                   &lt;
@@ -2329,8 +2329,8 @@ const QueryResultTable = ({
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages - 1}
                   className={`px-1.5 py-0.5 text-xs rounded-md ${currentPage >= totalPages - 1
-                      ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
-                      : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+                    ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
+                    : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
                     } ${THEME_TRANSITIONS.default}`}
                 >
                   &gt;
@@ -2339,8 +2339,8 @@ const QueryResultTable = ({
                   onClick={() => handlePageChange(totalPages - 1)}
                   disabled={currentPage >= totalPages - 1}
                   className={`px-1.5 py-0.5 text-xs rounded-md ${currentPage >= totalPages - 1
-                      ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
-                      : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
+                    ? (isDarkMode ? 'text-gray-600' : 'text-gray-400') + ' cursor-not-allowed'
+                    : (isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
                     } ${THEME_TRANSITIONS.default}`}
                 >
                   &raquo;
