@@ -2115,7 +2115,11 @@ def get_monitoring_order_data_internal():
                     ELSE so.OrderStatus
                 END AS [ORDER STATUS],
                 CASE 
-                    WHEN ol.ordnum IS NOT NULL THEN 'Yes'
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM WMSPROD.dbo.ord_line ol WITH (NOLOCK) 
+                        WHERE ol.ordnum = so.SystemRefId
+                    ) THEN 'Yes'
                     ELSE 'No'
                 END AS [Status_Interfaced],
                 CASE 
@@ -2124,11 +2128,6 @@ def get_monitoring_order_data_internal():
                     ELSE 'Kurang Dari 1 jam'
                 END AS [Status_Durasi]
             FROM Flexo_Db.dbo.SalesOrder so WITH (NOLOCK)
-            LEFT JOIN (
-                SELECT DISTINCT ordnum
-                FROM WMSPROD.dbo.ord_line WITH (NOLOCK)
-            ) ol
-                ON ol.ordnum = so.SystemRefId
             WHERE {where_clause}
               AND so.FulfilledByFlexo <> '0'
             ORDER BY so.OrderDate DESC
