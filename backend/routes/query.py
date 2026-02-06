@@ -2715,6 +2715,118 @@ def get_late_sku_data():
             'details': str(e)
         }), 500
 
+@query_bp.route('/late-sku-2', methods=['GET'])
+@jwt_required()
+def get_late_sku_2_data():
+    """Get SKU Telat Masuk 2 data - Quantity mismatch between SalesOrder and XML"""
+    try:
+        # Load environment variables
+        load_dotenv()
+        
+        # Get connection details from environment
+        server = os.getenv('DB_SERVER')
+        database = os.getenv('DB_NAME')
+        username = os.getenv('DB_USERNAME')
+        password = os.getenv('DB_PASSWORD')
+        
+        use_sqlite_for_testing = os.getenv('USE_SQLITE_FOR_TESTING', 'False').lower() == 'true'
+        
+        if use_sqlite_for_testing:
+            # Mock data for testing
+            mock_data = [
+                {'Brand': 'FACETOLOGY', 'Order NUmber': 'SO001', 'Order Status': 'READY_TO_SHIP', 'Quantity SOL': 10, 'Quantity XML': 8},
+                {'Brand': 'SOMEBYMI', 'Order NUmber': 'SO002', 'Order Status': 'READY_TO_SHIP', 'Quantity SOL': 15, 'Quantity XML': 12},
+                {'Brand': 'ESQA', 'Order NUmber': 'SO003', 'Order Status': 'PENDING', 'Quantity SOL': 20, 'Quantity XML': 18},
+                {'Brand': 'KIVA', 'Order NUmber': 'SO004', 'Order Status': 'READY_TO_SHIP', 'Quantity SOL': 5, 'Quantity XML': 3},
+                {'Brand': 'FACETOLOGY', 'Order NUmber': 'SO005', 'Order Status': 'READY_TO_SHIP', 'Quantity SOL': 25, 'Quantity XML': 20}
+            ]
+            
+            return jsonify({
+                'status': 'success',
+                'data': mock_data,
+                'data_source': 'mock_data'
+            }), 200
+        
+        else:
+            # Create connection to SQL Server
+            try:
+                connection_string = create_sql_server_connection_string(
+                    server, database, username, password, timeout=30
+                )
+                conn = pyodbc.connect(connection_string)
+            except Exception as driver_error:
+                print(f"ODBC Driver error in late-sku-2: {str(driver_error)}")
+                return jsonify({
+                    'status': 'error',
+                    'error': 'Database connection failed',
+                    'message': str(driver_error),
+                    'details': 'ODBC Driver untuk SQL Server tidak ditemukan. Silakan install ODBC Driver 17 for SQL Server.'
+                }), 500
+            
+            cursor = conn.cursor()
+            
+            # Execute the SKU Telat Masuk 2 query with CTE
+            query = """
+            WITH CTE1 AS (
+                SELECT 
+                    so.MerchantName,
+                    so.SystemRefId,
+                    so.OrderStatus,
+                    SUM(sol.QtyOrder) AS SOLQty
+                FROM Flexo_db.dbo.SalesOrder so
+                INNER JOIN Flexo_db.dbo.SalesOrderLine sol ON so.SalesOrderId = sol.SalesOrderId
+                WHERE so.OrderDate >'2026-01-30' and so.SystemId in('MPSH','MPTS','MPDS','JUBELIO')
+                GROUP BY so.SystemRefId, so.OrderStatus, so.MerchantName
+            ),
+            CTE2 AS (
+                SELECT 
+                    ol.ORDNUM AS SystemRefId, 
+                    SUM(ol.ORDQTY) AS XMLQty
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ol
+                WHERE ENTDTE >'2026-01-30'
+                GROUP BY ol.ORDNUM
+            )
+            SELECT 
+                CTE1.MerchantName AS [Brand],
+                CTE1.SystemRefId AS [Order NUmber],
+                CTE1.OrderStatus AS [Order Status],
+                CTE1.SOLQty AS [Quantity SOL], 
+                CTE2.XMLQty AS [Quantity XML]
+            FROM CTE1
+            INNER JOIN CTE2 ON CTE1.SystemRefId = CTE2.SystemRefId
+            WHERE CTE2.XMLQty < CTE1.SOLQty
+            """
+            
+            cursor.execute(query)
+            columns = [column[0] for column in cursor.description]
+            results = []
+            
+            for row in cursor.fetchall():
+                row_dict = {}
+                for i, value in enumerate(row):
+                    # Convert numeric values properly
+                    row_dict[columns[i]] = value
+                results.append(row_dict)
+            
+            cursor.close()
+            conn.close()
+            
+            return jsonify({
+                'status': 'success',
+                'data': results,
+                'data_source': 'sql_server'
+            }), 200
+            
+    except Exception as e:
+        print(f"Error in late-sku-2 endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'error': 'Failed to fetch late SKU 2 data',
+            'details': str(e)
+        }), 500
+
 @query_bp.route('/invalid-sku', methods=['GET'])
 @jwt_required()
 def get_invalid_sku_data():

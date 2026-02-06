@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
+import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area, BarChart, Bar, LabelList, Dot
 } from 'recharts';
-import { 
-  ChartBarIcon, ClockIcon, CheckCircleIcon, 
+import {
+  ChartBarIcon, ClockIcon, CheckCircleIcon,
   ExclamationTriangleIcon, XCircleIcon, ArrowPathIcon,
   ArrowTrendingUpIcon, ArrowTrendingDownIcon,
   FunnelIcon, CalendarIcon, XMarkIcon, ClipboardDocumentIcon
@@ -38,13 +38,14 @@ const StatCard = ({ title, value, icon: Icon, color, loading = false, onClick })
       red: 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400',
       yellow: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400',
       orange: 'bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
-      purple: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
+      purple: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+      pink: 'bg-pink-100 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
     };
     return colorMap[color] || colorMap.blue;
   };
 
-    return (
-    <div 
+  return (
+    <div
       className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm transition-all duration-200 hover:shadow-md ${onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''}`}
       onClick={onClick}
     >
@@ -80,13 +81,14 @@ const StatCardSkeleton = ({ color = 'blue', delay = 0 }) => {
       red: 'bg-red-100 dark:bg-red-900/20',
       yellow: 'bg-yellow-100 dark:bg-yellow-900/20',
       orange: 'bg-orange-100 dark:bg-orange-900/20',
-      purple: 'bg-purple-100 dark:bg-purple-900/20'
+      purple: 'bg-purple-100 dark:bg-purple-900/20',
+      pink: 'bg-pink-100 dark:bg-pink-900/20'
     };
     return colorMap[color] || colorMap.blue;
   };
 
   return (
-    <div 
+    <div
       className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm overflow-hidden relative"
       style={{ animationDelay: `${delay * 100}ms` }}
     >
@@ -109,7 +111,7 @@ const StatCardSkeleton = ({ color = 'blue', delay = 0 }) => {
 };
 
 const ChartSkeleton = ({ height = '400px', delay = 0 }) => (
-  <div 
+  <div
     className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm relative overflow-hidden"
     style={{ animationDelay: `${delay * 100}ms` }}
   >
@@ -124,7 +126,7 @@ const ChartSkeleton = ({ height = '400px', delay = 0 }) => (
         <Shimmer />
       </div>
     </div>
-    <div 
+    <div
       className="bg-gray-200 dark:bg-gray-700 rounded relative overflow-hidden"
       style={{ height }}
     >
@@ -159,16 +161,16 @@ const LoadingTips = () => {
     "🔍 Gunakan filter untuk fokus pada data spesifik",
     "✨ Dashboard ini menggunakan teknologi modern untuk performa optimal"
   ];
-  
+
   const [currentTip, setCurrentTip] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % tips.length);
     }, 3000);
     return () => clearInterval(interval);
   }, [tips.length]);
-  
+
   return (
     <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 mb-6">
       <div className="flex items-center space-x-3">
@@ -197,7 +199,7 @@ const ProgressLoader = ({ progress = 0, message = "Loading..." }) => {
           <span className="text-sm text-gray-500 dark:text-gray-400">{Math.min(progress, 100)}%</span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-          <div 
+          <div
             className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
             style={{ width: `${Math.min(progress, 100)}%` }}
           >
@@ -243,7 +245,7 @@ const TableSkeleton = ({ rows = 5, columns = 6 }) => (
 const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = false, isMockData = false }) => {
   const [copySuccess, setCopySuccess] = useState('');
   const [selectedColumn, setSelectedColumn] = useState('');
-  
+
   // Use fullData for copying, fallback to data if fullData not provided
   const dataForCopy = fullData && fullData.length > 0 ? fullData : data;
 
@@ -273,16 +275,16 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
   // Determine data type and get appropriate headers and summary stats
   const getDataConfig = () => {
     if (!data || data.length === 0) return { headers: [], summaryStats: [] };
-    
+
     const firstItem = data[0];
-    
+
     // Optimize summary stats calculation for large datasets
     const calculateStats = (dataArray, type) => {
       if (dataArray.length > 10000) {
         // For very large datasets, use sampling for better performance
         const sampleSize = Math.min(10000, dataArray.length);
         const sample = dataArray.slice(0, sampleSize);
-        
+
         switch (type) {
           case 'main':
             return [
@@ -308,9 +310,16 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
           case 'duplicate':
             return [
               { label: 'Total Records', value: dataArray.length, color: 'blue' },
-              { label: 'Unique Orders', value: new Set(sample.map(item => item.ORDNUM)).size, color: 'green' },
-              { label: 'Unique SKUs', value: new Set(sample.map(item => item.PRTNUM)).size, color: 'purple' },
-              { label: 'Unique Order Lines', value: new Set(sample.map(item => `${item.ORDNUM}-${item.ORDLIN}`)).size, color: 'orange' }
+              { label: 'Unique Orders', value: new Set(dataArray.map(item => item.ORDNUM)).size, color: 'green' },
+              { label: 'Unique SKUs', value: new Set(dataArray.map(item => item.PRTNUM)).size, color: 'purple' },
+              { label: 'Unique Order Lines', value: new Set(dataArray.map(item => `${item.ORDNUM}-${item.ORDLIN}`)).size, color: 'orange' }
+            ];
+          case 'lateSku2':
+            return [
+              { label: 'Total Records', value: dataArray.length, color: 'blue' },
+              { label: 'Unique Clients', value: new Set(dataArray.map(item => item.Brand)).size, color: 'green' },
+              { label: 'Total Quantity SOL', value: dataArray.reduce((sum, item) => sum + (item['Quantity SOL'] || 0), 0), color: 'orange' },
+              { label: 'Total Quantity XML', value: dataArray.reduce((sum, item) => sum + (item['Quantity XML'] || 0), 0), color: 'pink' }
             ];
           default:
             return [{ label: 'Total Records', value: dataArray.length, color: 'blue' }];
@@ -346,12 +355,19 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
               { label: 'Unique SKUs', value: new Set(dataArray.map(item => item.PRTNUM)).size, color: 'purple' },
               { label: 'Unique Order Lines', value: new Set(dataArray.map(item => `${item.ORDNUM}-${item.ORDLIN}`)).size, color: 'orange' }
             ];
+          case 'lateSku2':
+            return [
+              { label: 'Total Records', value: dataArray.length, color: 'blue' },
+              { label: 'Unique Clients', value: new Set(dataArray.map(item => item.Brand)).size, color: 'green' },
+              { label: 'Total Quantity SOL', value: dataArray.reduce((sum, item) => sum + (item['Quantity SOL'] || 0), 0), color: 'orange' },
+              { label: 'Total Quantity XML', value: dataArray.reduce((sum, item) => sum + (item['Quantity XML'] || 0), 0), color: 'pink' }
+            ];
           default:
             return [{ label: 'Total Records', value: dataArray.length, color: 'blue' }];
         }
       }
     };
-    
+
     // Check if it's main order data
     if (firstItem.MARKETPLACE && firstItem.Brand && firstItem.SystemRefId) {
       return {
@@ -359,7 +375,15 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
         summaryStats: calculateStats(data, 'main')
       };
     }
-    
+
+    // Check if it's SKU Telat Masuk 2 data (with aliased columns)
+    if (firstItem.Brand && firstItem['Order NUmber'] && firstItem['Order Status'] && firstItem['Quantity SOL'] !== undefined && firstItem['Quantity XML'] !== undefined) {
+      return {
+        headers: ['Brand', 'Order NUmber', 'Order Status', 'Quantity SOL', 'Quantity XML'],
+        summaryStats: calculateStats(data, 'lateSku2')
+      };
+    }
+
     // Check if it's late SKU data
     if (firstItem.ORDNUM && firstItem.PRTNUM && firstItem.ORDLIN !== undefined && firstItem.ORDSLN !== undefined) {
       return {
@@ -367,7 +391,7 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
         summaryStats: calculateStats(data, 'lateSku')
       };
     }
-    
+
     // Check if it's invalid SKU data
     if (firstItem.Client && firstItem.ORDNUM && firstItem.Issue) {
       return {
@@ -375,7 +399,7 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
         summaryStats: calculateStats(data, 'invalidSku')
       };
     }
-    
+
     // Check if it's duplicate order data
     if (firstItem.ORDNUM && firstItem.ORDLIN && firstItem.PRTNUM && firstItem.ORDSLN !== undefined) {
       return {
@@ -383,7 +407,7 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
         summaryStats: calculateStats(data, 'duplicate')
       };
     }
-    
+
     // Default fallback
     const headers = Object.keys(firstItem);
     return {
@@ -412,11 +436,11 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
     try {
       const columnData = dataForCopy.map(item => item[columnName]).filter(Boolean);
       const textToCopy = columnData.join('\n');
-      
+
       await navigator.clipboard.writeText(textToCopy);
       setCopySuccess(columnName);
       setSelectedColumn(columnName);
-      
+
       // Reset success message after 2 seconds
       setTimeout(() => {
         setCopySuccess('');
@@ -432,10 +456,10 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      
+
       setCopySuccess(columnName);
       setSelectedColumn(columnName);
-      
+
       setTimeout(() => {
         setCopySuccess('');
         setSelectedColumn('');
@@ -447,24 +471,24 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
     try {
       // Show loading state for copy operation
       setCopySuccess('copying');
-      
+
       // Use setTimeout to prevent UI freeze for large datasets
       setTimeout(async () => {
         try {
           // Limit data for clipboard to prevent browser freeze (use fullData for up to 50k)
           const maxRecords = 50000;
           const dataToCopy = dataForCopy.slice(0, maxRecords);
-          
+
           const csvData = [
             headers.join('\t'),
-            ...dataToCopy.map(item => 
+            ...dataToCopy.map(item =>
               headers.map(header => item[header] || '').join('\t')
             )
           ].join('\n');
-          
+
           await navigator.clipboard.writeText(csvData);
           setCopySuccess('all');
-          
+
           setTimeout(() => {
             setCopySuccess('');
           }, 2000);
@@ -474,22 +498,22 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
           const textArea = document.createElement('textarea');
           const maxRecords = 50000;
           const dataToCopy = dataForCopy.slice(0, maxRecords);
-          
+
           const csvData = [
             headers.join('\t'),
-            ...dataToCopy.map(item => 
+            ...dataToCopy.map(item =>
               headers.map(header => item[header] || '').join('\t')
             )
           ].join('\n');
-          
+
           textArea.value = csvData;
           document.body.appendChild(textArea);
           textArea.select();
           document.execCommand('copy');
           document.body.removeChild(textArea);
-          
+
           setCopySuccess('all');
-          
+
           setTimeout(() => {
             setCopySuccess('');
           }, 2000);
@@ -502,11 +526,11 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col relative"
         onClick={(e) => e.stopPropagation()}
       >
@@ -563,13 +587,12 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
                 <button
                   onClick={copyAllData}
                   disabled={copySuccess === 'copying'}
-                  className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    copySuccess === 'all'
-                      ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                      : copySuccess === 'copying'
+                  className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${copySuccess === 'all'
+                    ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                    : copySuccess === 'copying'
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                       : 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/30'
-                  }`}
+                    }`}
                 >
                   {copySuccess === 'copying' ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -577,9 +600,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
                     <ClipboardDocumentIcon className="w-4 h-4" />
                   )}
                   <span>
-                    {copySuccess === 'all' ? 'Copied!' : 
-                     copySuccess === 'copying' ? 'Copying...' : 
-                     `Copy All Data${data.length > 50000 ? ` (First 50,000)` : ''}`}
+                    {copySuccess === 'all' ? 'Copied!' :
+                      copySuccess === 'copying' ? 'Copying...' :
+                        `Copy All Data${data.length > 50000 ? ` (First 50,000)` : ''}`}
                   </span>
                 </button>
               </div>
@@ -600,13 +623,12 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       {headers.map((header) => (
-                        <th 
+                        <th
                           key={header}
-                          className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer transition-colors ${
-                            selectedColumn === header 
-                              ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' 
-                              : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
-                          }`}
+                          className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer transition-colors ${selectedColumn === header
+                            ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
+                            }`}
                           onClick={() => copyColumnData(header)}
                         >
                           <div className="flex items-center justify-between">
@@ -646,7 +668,7 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
                         <ExclamationTriangleIcon />
                       </div>
                       <span className="text-sm text-yellow-800 dark:text-yellow-200">
-                        Showing first 1,000 records of {data.length.toLocaleString()} total records for performance. 
+                        Showing first 1,000 records of {data.length.toLocaleString()} total records for performance.
                         Use the copy functions above to export all data.
                       </span>
                     </div>
@@ -704,18 +726,18 @@ const FilterSection = ({ filters, setFilters, brands, marketplaces, loading }) =
   const handleClearFilters = () => {
     // Reset to default date range (17:00 yesterday to current time)
     const now = new Date();
-    
+
     // Get yesterday's date
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    
+
     // Set start time to 17:00 yesterday
     const startDate = new Date(yesterday);
     startDate.setHours(17, 0, 0, 0);
-    
+
     // Set end time to current time
     const endDate = new Date(now);
-    
+
     // Convert to local datetime string for input fields
     const formatLocalDateTime = (date) => {
       const year = date.getFullYear();
@@ -725,7 +747,7 @@ const FilterSection = ({ filters, setFilters, brands, marketplaces, loading }) =
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
-    
+
     const clearedFilters = {
       startDate: formatLocalDateTime(startDate),
       endDate: formatLocalDateTime(endDate),
@@ -743,7 +765,7 @@ const FilterSection = ({ filters, setFilters, brands, marketplaces, loading }) =
         <FunnelIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
       </div>
-      
+
       {/* Filter Fields */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-6">
         {/* Date Range Filter */}
@@ -836,34 +858,36 @@ const MonitoringOrder = () => {
   const [brandsView, setBrandsView] = useState('chart');
   const [marketplaceView, setMarketplaceView] = useState('chart');
   const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
-  
-  // New state for the 3 additional grids
+
+  // New state for the 3 additional grids + SKU Telat Masuk 2
   const [lateSkuData, setLateSkuData] = useState([]);
+  const [lateSku2Data, setLateSku2Data] = useState([]);
   const [invalidSkuData, setInvalidSkuData] = useState([]);
   const [duplicateOrderData, setDuplicateOrderData] = useState([]);
   const [loadingAdditionalData, setLoadingAdditionalData] = useState(false);
   const [additionalDataSources, setAdditionalDataSources] = useState({
     lateSku: 'sql',
-    invalidSku: 'sql', 
+    lateSku2: 'sql',
+    invalidSku: 'sql',
     duplicateOrders: 'sql'
   });
-  
+
 
   // Set default date range (17:00 yesterday to current time)
   const getDefaultDateRange = () => {
     const now = new Date();
-    
+
     // Get yesterday's date
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    
+
     // Set start time to 17:00 yesterday
     const startDate = new Date(yesterday);
     startDate.setHours(17, 0, 0, 0);
-    
+
     // Set end time to current time
     const endDate = new Date(now);
-    
+
     // Convert to local datetime string for input fields
     const formatLocalDateTime = (date) => {
       const year = date.getFullYear();
@@ -873,14 +897,14 @@ const MonitoringOrder = () => {
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
-    
+
     console.log('Default date range:', {
       startDate: formatLocalDateTime(startDate),
       endDate: formatLocalDateTime(endDate),
       startDateFull: startDate.toString(),
       endDateFull: endDate.toString()
     });
-    
+
     return {
       startDate: formatLocalDateTime(startDate),
       endDate: formatLocalDateTime(endDate),
@@ -890,7 +914,7 @@ const MonitoringOrder = () => {
   };
 
   const [filters, setFilters] = useState(getDefaultDateRange());
-  
+
   // Modal state
   const [modalState, setModalState] = useState({
     isOpen: false,
@@ -899,17 +923,17 @@ const MonitoringOrder = () => {
     fullData: [], // Full data (same as data, for copying)
     loading: false
   });
-  
+
   const [dataSource, setDataSource] = useState('sql'); // 'sql' or 'mock'
-  
+
   const [data, setData] = useState({
     cards: {
       totalOrder: 0,
       totalOrderInterface: 0,
       totalOrderNotYetInterface: 0,
-      totalOrderPendingVerifikasi: 0, 
-      totalOrderLebihDari1Jam: 0, 
-      totalOrderKurangDari1Jam: 0 
+      totalOrderPendingVerifikasi: 0,
+      totalOrderLebihDari1Jam: 0,
+      totalOrderKurangDari1Jam: 0
     },
     orderEvolution: [],
     top20Data: [],
@@ -938,10 +962,10 @@ const MonitoringOrder = () => {
   // Set page title for browser tab
   const baseTitle = 'SalesOrder Monitoring';
   const orderCount = data.cards.totalOrder;
-  const pageTitle = orderCount > 0 
+  const pageTitle = orderCount > 0
     ? `${baseTitle} - ${orderCount.toLocaleString()} Orders`
     : baseTitle;
-  
+
   usePageTitle(pageTitle);
 
   // Apply filters with useMemo for better performance
@@ -956,7 +980,7 @@ const MonitoringOrder = () => {
     if (filters.startDate && filters.endDate) {
       const startDate = new Date(filters.startDate);
       const endDate = new Date(filters.endDate);
-      
+
       filtered = filtered.filter(item => {
         const orderDate = new Date(item.OrderDate);
         return orderDate >= startDate && orderDate <= endDate;
@@ -984,7 +1008,7 @@ const MonitoringOrder = () => {
   const processedData = useMemo(() => {
     // Use filteredDataMemo for consistent processing
     const dataToProcess = filteredDataMemo;
-    
+
     if (!dataToProcess || dataToProcess.length === 0) {
       return {
         cards: {
@@ -1089,21 +1113,21 @@ const MonitoringOrder = () => {
 
     // Process order evolution (hourly data) - use filter dates
     const orderEvolution = [];
-    
+
     // Use filter dates for order evolution
     const filterStartDate = new Date(filters.startDate);
     const filterEndDate = new Date(filters.endDate);
-    
+
 
 
     // Generate hourly intervals based on filter dates
     for (let time = new Date(filterStartDate); time <= filterEndDate; time.setHours(time.getHours() + 1)) {
       const hourKey = time.toISOString().slice(0, 13) + ':00:00';
-      
+
       orderEvolution.push({
-        time: time.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
+        time: time.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
@@ -1140,28 +1164,28 @@ const MonitoringOrder = () => {
       setLoadingCards(true);
       setError(null);
       const token = localStorage.getItem('token');
-      
+
       // Build query parameters - load all data for accurate cards summary
       // Backend will fetch all records if per_page is not specified
       const params = new URLSearchParams({
         page: '1'
         // No per_page = fetch all data for accurate statistics
       });
-      
+
       // Add filters if they exist
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.marketplace) params.append('marketplace', filters.marketplace);
-      
+
       // Timeout 120 seconds for cards (increased for Linux server performance)
       // Backend query timeout is 85s for Linux, so we need longer frontend timeout
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Request timeout after 120 seconds')), 120000);
       });
-      
+
       const fetchPromise = fetch(`/api/query/monitoring-order?${params.toString()}`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Accept-Encoding': 'gzip, deflate, br'
         }
@@ -1170,28 +1194,28 @@ const MonitoringOrder = () => {
       const response = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
+
       const result = await response.json();
-      
+
       if (result.status === 'success' && result.data) {
         setCardsData(result.data);
         // Set data source based on API response
         const source = result.data_source === 'sql_server' ? 'sql' : 'mock';
         setDataSource(source);
         setError(null);
-        
+
         console.log(`Cards data loaded: ${result.data.length} records`);
       } else {
         throw new Error(result.error || 'Failed to fetch cards data');
       }
     } catch (err) {
       console.error('Error fetching cards:', err);
-      
+
       if (err.message.includes('401') || err.message.includes('403')) {
         setError('Authentication failed. Please login again.');
         return;
       }
-      
+
       // Fallback to mock data for cards
       const mockData = [
         { 'MARKETPLACE': 'SHOPEE', 'Brand': 'FACETOLOGY', 'SystemRefId': 'MOCK001', 'ORDER STATUS': 'READY_TO_SHIP', 'Status_Interfaced': 'Yes', 'Status_Durasi': 'Lebih Dari 1 jam', 'OrderDate': '2024-01-16T10:30:00' },
@@ -1209,28 +1233,28 @@ const MonitoringOrder = () => {
     try {
       setLoadingCharts(true);
       const token = localStorage.getItem('token');
-      
+
       // Build query parameters - load ALL data (no pagination limit)
       // Backend will fetch all records if per_page is not specified
       const params = new URLSearchParams({
         page: '1'
         // No per_page = fetch all data
       });
-      
+
       // Add filters if they exist
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.marketplace) params.append('marketplace', filters.marketplace);
-      
+
       // Timeout 150 seconds for charts data (increased for Linux server)
       // Backend query timeout is 85s for Linux, need buffer for network latency
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Request timeout after 150 seconds')), 150000);
       });
-      
+
       const fetchPromise = fetch(`/api/query/monitoring-order?${params.toString()}`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Accept-Encoding': 'gzip, deflate, br'
         }
@@ -1239,24 +1263,24 @@ const MonitoringOrder = () => {
       const response = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
+
       const result = await response.json();
-      
+
       if (result.status === 'success' && result.data) {
         setRawData(result.data);
-        
+
         // Log performance info if available
         if (result.performance) {
           console.log('Charts API Performance:', result.performance);
         }
-        
+
         // Log pagination info if available
         if (result.pagination) {
           console.log(`Charts data loaded: ${result.data.length} records (Total: ${result.pagination.total_count})`);
         } else {
           console.log(`Charts data loaded: ${result.data.length} records`);
         }
-        
+
         if (result.data.length > 0) {
           console.log('Sample data:', result.data[0]);
         }
@@ -1279,29 +1303,35 @@ const MonitoringOrder = () => {
     try {
       setLoadingAdditionalData(true);
       const token = localStorage.getItem('token');
-      
-      // Parallel fetching for all 3 endpoints
-      const [lateSkuResponse, invalidSkuResponse, duplicateOrderResponse] = await Promise.allSettled([
+
+      // Parallel fetching for all 4 endpoints including late-sku-2
+      const [lateSkuResponse, lateSku2Response, invalidSkuResponse, duplicateOrderResponse] = await Promise.allSettled([
         fetch('/api/query/late-sku', {
-          headers: { 
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept-Encoding': 'gzip, deflate, br'
+          }
+        }),
+        fetch('/api/query/late-sku-2', {
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Accept-Encoding': 'gzip, deflate, br'
           }
         }),
         fetch('/api/query/invalid-sku', {
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Accept-Encoding': 'gzip, deflate, br'
           }
         }),
         fetch('/api/query/duplicate-orders', {
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Accept-Encoding': 'gzip, deflate, br'
           }
         })
       ]);
-      
+
       // Process Late SKU response
       if (lateSkuResponse.status === 'fulfilled' && lateSkuResponse.value.ok) {
         try {
@@ -1316,7 +1346,22 @@ const MonitoringOrder = () => {
       } else {
         console.warn('Late SKU API failed:', lateSkuResponse.status);
       }
-      
+
+      // Process Late SKU 2 response
+      if (lateSku2Response.status === 'fulfilled' && lateSku2Response.value.ok) {
+        try {
+          const lateSku2Result = await lateSku2Response.value.json();
+          if (lateSku2Result.status === 'success') {
+            setLateSku2Data(lateSku2Result.data || []);
+            setAdditionalDataSources(prev => ({ ...prev, lateSku2: lateSku2Result.data_source || 'sql' }));
+          }
+        } catch (err) {
+          console.warn('Error parsing late SKU 2 data:', err);
+        }
+      } else {
+        console.warn('Late SKU 2 API failed:', lateSku2Response.status);
+      }
+
       // Process Invalid SKU response
       if (invalidSkuResponse.status === 'fulfilled' && invalidSkuResponse.value.ok) {
         try {
@@ -1331,7 +1376,7 @@ const MonitoringOrder = () => {
       } else {
         console.warn('Invalid SKU API failed:', invalidSkuResponse.status);
       }
-      
+
       // Process Duplicate Orders response
       if (duplicateOrderResponse.status === 'fulfilled' && duplicateOrderResponse.value.ok) {
         try {
@@ -1346,7 +1391,7 @@ const MonitoringOrder = () => {
       } else {
         console.warn('Duplicate Orders API failed:', duplicateOrderResponse.status);
       }
-      
+
     } catch (err) {
       console.error('Error in fetchAdditionalData:', err);
     } finally {
@@ -1373,7 +1418,7 @@ const MonitoringOrder = () => {
         // Use the same filtered data that's used for cards
         let modalData = [...filteredDataMemo];
         let title = '';
-        
+
         // Filter by card type based on the current filtered data
         switch (cardType) {
           case 'totalOrder':
@@ -1392,16 +1437,16 @@ const MonitoringOrder = () => {
             title = 'Pending Verification Orders';
             break;
           case 'totalOrderLebihDari1Jam':
-            modalData = modalData.filter(item => 
-              item.Status_Interfaced === 'No' && 
+            modalData = modalData.filter(item =>
+              item.Status_Interfaced === 'No' &&
               item.Status_Durasi === 'Lebih Dari 1 jam' &&
               item.SystemRefId
             );
             title = 'SystemRefId Not Interfaced > 1 Hour';
             break;
           case 'totalOrderKurangDari1Jam':
-            modalData = modalData.filter(item => 
-              item.Status_Interfaced === 'No' && 
+            modalData = modalData.filter(item =>
+              item.Status_Interfaced === 'No' &&
               item.Status_Durasi === 'Kurang Dari 1 jam' &&
               item.SystemRefId
             );
@@ -1410,7 +1455,7 @@ const MonitoringOrder = () => {
           default:
             title = 'Order Details';
         }
-        
+
         // Show all data, no limits
         setModalState({
           isOpen: true,
@@ -1496,11 +1541,10 @@ const MonitoringOrder = () => {
                 <p className="text-gray-600 dark:text-gray-400 mt-1">Real-time monitoring of SalesOrder</p>
               </div>
               {/* Data Source Indicator */}
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                dataSource === 'sql' 
-                  ? 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700' 
-                  : 'bg-orange-100 text-orange-800 border border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700'
-              }`}>
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${dataSource === 'sql'
+                ? 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700'
+                : 'bg-orange-100 text-orange-800 border border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700'
+                }`}>
                 {dataSource === 'sql' ? (
                   <span className="flex items-center">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
@@ -1526,12 +1570,12 @@ const MonitoringOrder = () => {
                   const minutes = String(date.getMinutes()).padStart(2, '0');
                   return `${year}-${month}-${day}T${hours}:${minutes}`;
                 };
-                
+
                 const updatedFilters = {
                   ...filters,
                   endDate: formatLocalDateTime(now)
                 };
-                
+
                 setFilters(updatedFilters);
                 // Refresh with lazy loading: cards first, then charts
                 fetchCardsData().then(() => {
@@ -1564,10 +1608,10 @@ const MonitoringOrder = () => {
         )}
 
         {/* Filters */}
-        <FilterSection 
-          filters={filters} 
-          setFilters={setFilters} 
-          brands={data.brands} 
+        <FilterSection
+          filters={filters}
+          setFilters={setFilters}
+          brands={data.brands}
           marketplaces={data.marketplaces}
           loading={loadingCards}
         />
@@ -1588,61 +1632,61 @@ const MonitoringOrder = () => {
             </>
           ) : (
             <>
-          <StatCard 
-            title="Total Orders" 
-            value={data.cards.totalOrder} 
-            icon={ChartBarIcon} 
-            color="blue" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrder')}
-          />
-          <StatCard 
-            title="Interfaced" 
-            value={data.cards.totalOrderInterface} 
-            icon={CheckCircleIcon} 
-            color="green" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderInterface')}
-          />
-          <StatCard 
-            title="Not Interfaced" 
-            value={data.cards.totalOrderNotYetInterface} 
-            icon={XCircleIcon} 
-            color="red" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderNotYetInterface')}
-          />
-          <StatCard 
-            title="Pending Verification" 
-            value={data.cards.totalOrderPendingVerifikasi} 
-            icon={ClockIcon} 
-            color="yellow" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
-          />
-          <StatCard 
-            title=" > 1 Hour" 
-            value={data.cards.totalOrderLebihDari1Jam} 
-            icon={ArrowTrendingUpIcon} 
-            color="orange" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
-          />
-          <StatCard 
-            title=" < 1 Hour" 
-            value={data.cards.totalOrderKurangDari1Jam} 
-            icon={ArrowTrendingDownIcon} 
-            color="purple" 
-            loading={loadingCards}
-            onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
-          />
+              <StatCard
+                title="Total Orders"
+                value={data.cards.totalOrder}
+                icon={ChartBarIcon}
+                color="blue"
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrder')}
+              />
+              <StatCard
+                title="Interfaced"
+                value={data.cards.totalOrderInterface}
+                icon={CheckCircleIcon}
+                color="green"
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderInterface')}
+              />
+              <StatCard
+                title="Not Interfaced"
+                value={data.cards.totalOrderNotYetInterface}
+                icon={XCircleIcon}
+                color="red"
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderNotYetInterface')}
+              />
+              <StatCard
+                title="Pending Verification"
+                value={data.cards.totalOrderPendingVerifikasi}
+                icon={ClockIcon}
+                color="yellow"
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderPendingVerifikasi')}
+              />
+              <StatCard
+                title=" > 1 Hour"
+                value={data.cards.totalOrderLebihDari1Jam}
+                icon={ArrowTrendingUpIcon}
+                color="orange"
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderLebihDari1Jam')}
+              />
+              <StatCard
+                title=" < 1 Hour"
+                value={data.cards.totalOrderKurangDari1Jam}
+                icon={ArrowTrendingDownIcon}
+                color="purple"
+                loading={loadingCards}
+                onClick={() => handleCardClick('totalOrderKurangDari1Jam')}
+              />
             </>
           )}
         </div>
 
         {/* Charts Loading Indicator with Progress */}
         {loadingCharts && (
-          <ProgressLoader 
+          <ProgressLoader
             progress={rawData.length > 0 ? Math.min((rawData.length / 100000) * 100, 95) : 30}
             message="Loading charts data..."
           />
@@ -1652,7 +1696,7 @@ const MonitoringOrder = () => {
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-6">
           {/* TOP 20 Brands List - 70% */}
           <div className="lg:col-span-7 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                          <style>{`
+            <style>{`
               .recharts-bar-rectangle:hover {
                 opacity: 1 !important;
                 fill-opacity: 1 !important;
@@ -1662,10 +1706,10 @@ const MonitoringOrder = () => {
                 fill-opacity: 1 !important;
               }
             `}</style>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                TOP 20 Brands by Order Count
-              </h3>
-            
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              TOP 20 Brands by Order Count
+            </h3>
+
             {/* Header */}
             <div className="flex items-center justify-between mb-4 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center space-x-8">
@@ -1675,7 +1719,7 @@ const MonitoringOrder = () => {
                 </div>
               </div>
               <div className="text-xs">
-                Showing top {data.top20Data.length} brands | 
+                Showing top {data.top20Data.length} brands |
                 Total: {data.top20Data.reduce((sum, item) => sum + item.count, 0).toLocaleString()} orders
               </div>
             </div>
@@ -1685,21 +1729,19 @@ const MonitoringOrder = () => {
               <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setBrandsView('chart')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    brandsView === 'chart'
-                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${brandsView === 'chart'
+                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   Chart View
                 </button>
                 <button
                   onClick={() => setBrandsView('list')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    brandsView === 'list'
-                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${brandsView === 'list'
+                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   List View
                 </button>
@@ -1713,13 +1755,13 @@ const MonitoringOrder = () => {
                   <ChartSkeleton height="500px" delay={0} />
                 ) : data.top20Data && data.top20Data.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={data.top20Data} 
+                    <BarChart
+                      data={data.top20Data}
                       margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke={getThemeColors(isDarkMode).grid} strokeOpacity={0.2} />
-                      <XAxis 
-                        type="category" 
+                      <XAxis
+                        type="category"
                         dataKey="name"
                         stroke={getThemeColors(isDarkMode).textSecondary}
                         tick={{ fontSize: 10, fill: getThemeColors(isDarkMode).textSecondary }}
@@ -1727,14 +1769,14 @@ const MonitoringOrder = () => {
                         textAnchor="end"
                         interval={0}
                       />
-                      <YAxis 
-                        type="number" 
+                      <YAxis
+                        type="number"
                         stroke={getThemeColors(isDarkMode).textSecondary}
                         tickFormatter={(value) => value.toLocaleString()}
                         tick={{ fontSize: 12, fill: getThemeColors(isDarkMode).textSecondary }}
                         domain={[0, 'dataMax']}
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value) => [value.toLocaleString(), 'Orders']}
                         labelFormatter={(label) => `Brand: ${label}`}
                         contentStyle={{
@@ -1745,20 +1787,20 @@ const MonitoringOrder = () => {
                           color: getThemeColors(isDarkMode).text
                         }}
                       />
-                      <Bar 
-                        dataKey="count" 
+                      <Bar
+                        dataKey="count"
                         fill={getThemeColors(isDarkMode).primary}
-                        radius={[4, 4, 0, 0]} 
+                        radius={[4, 4, 0, 0]}
                         name="Orders"
                         barSize={30}
                         onMouseOver={(data, index) => {
                           // Prevent hover background
                         }}
                       >
-                        <LabelList 
-                          dataKey="count" 
-                          position="top" 
-                          formatter={(value) => value.toLocaleString()} 
+                        <LabelList
+                          dataKey="count"
+                          position="top"
+                          formatter={(value) => value.toLocaleString()}
                           fill={getThemeColors(isDarkMode).text}
                           fontSize={10}
                         />
@@ -1778,50 +1820,50 @@ const MonitoringOrder = () => {
 
             {/* Brands List View */}
             {brandsView === 'list' && (
-            <div className="h-[500px] overflow-y-auto">
-              {data.top20Data && data.top20Data.length > 0 ? (
-                <div className="space-y-3">
-                  {data.top20Data.map((item, index) => (
+              <div className="h-[500px] overflow-y-auto">
+                {data.top20Data && data.top20Data.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.top20Data.map((item, index) => (
                       <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                      <div className="w-8 text-sm font-bold text-gray-500 dark:text-gray-400 text-center">
-                        #{index + 1}
-                      </div>
+                        <div className="w-8 text-sm font-bold text-gray-500 dark:text-gray-400 text-center">
+                          #{index + 1}
+                        </div>
                         <div className="flex-1">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {item.name}
-                      </div>
+                            {item.name}
+                          </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             Brand ID: {item.name} | Order Count
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                          {item.count.toLocaleString()}
+                            {item.count.toLocaleString()}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             orders
                           </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                  <div className="text-center">
-                    <p>No brand data available</p>
-                    
+                    ))}
                   </div>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                    <div className="text-center">
+                      <p>No brand data available</p>
+
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-            
+
             {/* Summary */}
             <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex justify-between items-center text-sm">
                 <div className="text-gray-600 dark:text-gray-400">
-                  <span className="font-medium">Total Brands:</span> {data.top20Data.length} | 
-                  <span className="font-medium ml-2">Highest Count:</span> {data.top20Data.length > 0 ? data.top20Data[0].count.toLocaleString() : 'N/A'} orders | 
+                  <span className="font-medium">Total Brands:</span> {data.top20Data.length} |
+                  <span className="font-medium ml-2">Highest Count:</span> {data.top20Data.length > 0 ? data.top20Data[0].count.toLocaleString() : 'N/A'} orders |
                   <span className="font-medium ml-2">Total:</span> {data.top20Data.reduce((sum, item) => sum + item.count, 0).toLocaleString()} orders
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -1846,7 +1888,7 @@ const MonitoringOrder = () => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Platform Orders Distribution
             </h3>
-            
+
             {/* Header */}
             <div className="flex items-center justify-between mb-4 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center space-x-2">
@@ -1868,21 +1910,19 @@ const MonitoringOrder = () => {
               <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setMarketplaceView('chart')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    marketplaceView === 'chart'
-                      ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${marketplaceView === 'chart'
+                    ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   Chart View
                 </button>
                 <button
                   onClick={() => setMarketplaceView('list')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    marketplaceView === 'list'
-                      ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${marketplaceView === 'list'
+                    ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   List View
                 </button>
@@ -1896,7 +1936,7 @@ const MonitoringOrder = () => {
                   <ChartSkeleton height="500px" delay={1} />
                 ) : data.topMarketplaceData && data.topMarketplaceData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
+                    <BarChart
                       layout="vertical"
                       data={data.topMarketplaceData.map(item => ({
                         platform: item.name,
@@ -1907,20 +1947,20 @@ const MonitoringOrder = () => {
                       barSize={25}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke={getThemeColors(isDarkMode).grid} strokeOpacity={0.2} />
-                      <XAxis 
-                        type="number" 
+                      <XAxis
+                        type="number"
                         stroke={getThemeColors(isDarkMode).textSecondary}
                         tickFormatter={(value) => value.toLocaleString()}
                         tick={{ fontSize: 11, fill: getThemeColors(isDarkMode).textSecondary }}
                       />
-                      <YAxis 
-                        dataKey="platform" 
+                      <YAxis
+                        dataKey="platform"
                         type="category"
                         stroke={getThemeColors(isDarkMode).textSecondary}
                         tick={{ fontSize: 11, fill: getThemeColors(isDarkMode).textSecondary }}
                         width={60}
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value) => [value.toLocaleString(), 'Orders']}
                         labelFormatter={(label) => `Platform: ${label}`}
                         contentStyle={{
@@ -1931,8 +1971,8 @@ const MonitoringOrder = () => {
                           color: getThemeColors(isDarkMode).text
                         }}
                       />
-                      <Bar 
-                        dataKey="orders" 
+                      <Bar
+                        dataKey="orders"
                         fill={getThemeColors(isDarkMode).success}
                         name="Orders"
                         onMouseOver={(data, index) => {
@@ -1987,12 +2027,12 @@ const MonitoringOrder = () => {
                 )}
               </div>
             )}
-            
+
             {/* Summary */}
             <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex justify-between items-center text-xs">
                 <div className="text-gray-600 dark:text-gray-400">
-                  <span className="font-medium">Top:</span> {data.topMarketplaceData && data.topMarketplaceData.length > 0 ? `${data.topMarketplaceData[0].name} (${data.topMarketplaceData[0].count.toLocaleString()})` : 'N/A'} | 
+                  <span className="font-medium">Top:</span> {data.topMarketplaceData && data.topMarketplaceData.length > 0 ? `${data.topMarketplaceData[0].name} (${data.topMarketplaceData[0].count.toLocaleString()})` : 'N/A'} |
                   <span className="font-medium ml-1">Lowest:</span> {data.topMarketplaceData && data.topMarketplaceData.length > 0 ? `${data.topMarketplaceData[data.topMarketplaceData.length - 1].name} (${data.topMarketplaceData[data.topMarketplaceData.length - 1].count.toLocaleString()})` : 'N/A'}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -2004,216 +2044,235 @@ const MonitoringOrder = () => {
         </div>
 
         {/* Additional Data Grids */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
           {loadingAdditionalData ? (
             <>
               <StatCardSkeleton color="red" delay={0} />
-              <StatCardSkeleton color="orange" delay={1} />
-              <StatCardSkeleton color="purple" delay={2} />
+              <StatCardSkeleton color="pink" delay={1} />
+              <StatCardSkeleton color="orange" delay={2} />
+              <StatCardSkeleton color="purple" delay={3} />
             </>
           ) : (
             <>
-          {/* SKU Telat Masuk */}
-          <StatCard
-            title="SKU Telat Masuk"
-            value={lateSkuData.length}
-            icon={ExclamationTriangleIcon}
-            color="red"
-            loading={loadingAdditionalData}
-            onClick={() => {
-              setModalState({
-                isOpen: true,
-                title: 'SKU Telat Masuk Details',
-                data: lateSkuData,
-                fullData: lateSkuData,
-                loading: false
-              });
-            }}
-          />
+              {/* SKU Mismatch: XML vs JDA */}
+              <StatCard
+                title="SKU Mismatch: XML vs JDA"
+                value={lateSkuData.length}
+                icon={ExclamationTriangleIcon}
+                color="red"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  setModalState({
+                    isOpen: true,
+                    title: 'SKU Mismatch: XML vs JDA Details',
+                    data: lateSkuData,
+                    fullData: lateSkuData,
+                    loading: false
+                  });
+                }}
+              />
 
-          {/* Invalid SKU */}
-          <StatCard
-            title="Invalid SKU"
-            value={invalidSkuData.length}
-            icon={XCircleIcon}
-            color="orange"
-            loading={loadingAdditionalData}
-            onClick={() => {
-              setModalState({
-                isOpen: true,
-                title: 'Invalid SKU Details',
-                data: invalidSkuData,
-                fullData: invalidSkuData,
-                loading: false
-              });
-            }}
-          />
+              {/* SKU Mismatch: SOL vs XML */}
+              <StatCard
+                title="SKU Mismatch: SOL vs XML"
+                value={lateSku2Data.length}
+                icon={ExclamationTriangleIcon}
+                color="pink"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  setModalState({
+                    isOpen: true,
+                    title: 'SKU Mismatch: SOL vs XML Details',
+                    data: lateSku2Data,
+                    fullData: lateSku2Data,
+                    loading: false
+                  });
+                }}
+              />
 
-          {/* Order Duplikat */}
-          <StatCard
-            title="Order Duplikat"
-            value={duplicateOrderData.length}
-            icon={ClipboardDocumentIcon}
-            color="purple"
-            loading={loadingAdditionalData}
-            onClick={() => {
-              setModalState({
-                isOpen: true,
-                title: 'Order Duplikat Details',
-                data: duplicateOrderData,
-                fullData: duplicateOrderData,
-                loading: false
-              });
-            }}
-          />
+              {/* Invalid SKU */}
+              <StatCard
+                title="Invalid SKU"
+                value={invalidSkuData.length}
+                icon={XCircleIcon}
+                color="orange"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  setModalState({
+                    isOpen: true,
+                    title: 'Invalid SKU Details',
+                    data: invalidSkuData,
+                    fullData: invalidSkuData,
+                    loading: false
+                  });
+                }}
+              />
+
+              {/* Order Duplikat */}
+              <StatCard
+                title="Order Duplikat"
+                value={duplicateOrderData.length}
+                icon={ClipboardDocumentIcon}
+                color="purple"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  setModalState({
+                    isOpen: true,
+                    title: 'Order Duplikat Details',
+                    data: duplicateOrderData,
+                    fullData: duplicateOrderData,
+                    loading: false
+                  });
+                }}
+              />
             </>
           )}
         </div>
 
         {/* Order Evolution Chart */}
-          <div className="col-span-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Order Evolution (17:00 Yesterday - Now)
-              </h3>
-              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span>Hourly Orders</span>
+        <div className="col-span-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Order Evolution (17:00 Yesterday - Now)
+            </h3>
+            <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                <span>Hourly Orders</span>
+              </div>
+              <div className="text-xs">
+                {data.orderEvolution.length} time periods
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          {data.orderEvolution.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Total Orders</div>
+                <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                  {data.orderEvolution.reduce((sum, item) => sum + item.orders, 0).toLocaleString()}
                 </div>
-                <div className="text-xs">
-                  {data.orderEvolution.length} time periods
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                <div className="text-xs text-green-600 dark:text-green-400 font-medium">Peak Hour</div>
+                <div className="text-lg font-bold text-green-700 dark:text-green-300">
+                  {(() => {
+                    const peak = data.orderEvolution.reduce((max, item) =>
+                      item.orders > max.orders ? item : max, data.orderEvolution[0]);
+                    return peak ? peak.time : 'N/A';
+                  })()}
+                </div>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">Peak Orders</div>
+                <div className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                  {data.orderEvolution.reduce((max, item) =>
+                    Math.max(max, item.orders), 0).toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">Avg/Hour</div>
+                <div className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                  {Math.round(data.orderEvolution.reduce((sum, item) => sum + item.orders, 0) / data.orderEvolution.length).toLocaleString()}
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Stats Cards */}
-            {data.orderEvolution.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Total Orders</div>
-                  <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                    {data.orderEvolution.reduce((sum, item) => sum + item.orders, 0).toLocaleString()}
-                  </div>
-                </div>
-                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                  <div className="text-xs text-green-600 dark:text-green-400 font-medium">Peak Hour</div>
-                  <div className="text-lg font-bold text-green-700 dark:text-green-300">
-                    {(() => {
-                      const peak = data.orderEvolution.reduce((max, item) => 
-                        item.orders > max.orders ? item : max, data.orderEvolution[0]);
-                      return peak ? peak.time : 'N/A';
-                    })()}
-                  </div>
-                </div>
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
-                  <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">Peak Orders</div>
-                  <div className="text-lg font-bold text-purple-700 dark:text-purple-300">
-                    {data.orderEvolution.reduce((max, item) => 
-                      Math.max(max, item.orders), 0).toLocaleString()}
-                  </div>
-                </div>
-                <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-                  <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">Avg/Hour</div>
-                  <div className="text-lg font-bold text-orange-700 dark:text-orange-300">
-                    {Math.round(data.orderEvolution.reduce((sum, item) => sum + item.orders, 0) / data.orderEvolution.length).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Chart */}
-            <div className="h-[400px]">
-              {loadingCharts ? (
-                <ChartSkeleton height="400px" delay={2} />
-              ) : data.orderEvolution.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart 
-                    data={data.orderEvolution} 
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          {/* Chart */}
+          <div className="h-[400px]">
+            {loadingCharts ? (
+              <ChartSkeleton height="400px" delay={2} />
+            ) : data.orderEvolution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={data.orderEvolution}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={getThemeColors(isDarkMode).grid} strokeOpacity={0.2} />
+                  <XAxis
+                    dataKey="time"
+                    stroke={getThemeColors(isDarkMode).textSecondary}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    tick={{ fontSize: 11, fill: getThemeColors(isDarkMode).textSecondary }}
+                  />
+                  <YAxis
+                    stroke={getThemeColors(isDarkMode).textSecondary}
+                    tickFormatter={(value) => value.toLocaleString()}
+                    tick={{ fontSize: 11, fill: getThemeColors(isDarkMode).textSecondary }}
+                  />
+                  <Tooltip
+                    formatter={(value) => [value.toLocaleString(), 'Orders']}
+                    labelFormatter={(label) => `Time: ${label}`}
+                    contentStyle={{
+                      backgroundColor: getThemeColors(isDarkMode).tooltipBg,
+                      border: `1px solid ${getThemeColors(isDarkMode).tooltipBorder}`,
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      color: getThemeColors(isDarkMode).text
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="orders"
+                    stroke={getThemeColors(isDarkMode).primary}
+                    fill={getThemeColors(isDarkMode).primary}
+                    fillOpacity={0.3}
+                    name="Orders"
+                    strokeWidth={2}
+                    dot={{
+                      fill: getThemeColors(isDarkMode).primary,
+                      stroke: getThemeColors(isDarkMode).background,
+                      strokeWidth: 2,
+                      r: 4
+                    }}
+                    activeDot={{
+                      fill: getThemeColors(isDarkMode).primary,
+                      stroke: getThemeColors(isDarkMode).background,
+                      strokeWidth: 3,
+                      r: 6
+                    }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke={getThemeColors(isDarkMode).grid} strokeOpacity={0.2} />
-                    <XAxis 
-                      dataKey="time" 
-                      stroke={getThemeColors(isDarkMode).textSecondary}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      tick={{ fontSize: 11, fill: getThemeColors(isDarkMode).textSecondary }}
+                    <LabelList
+                      dataKey="orders"
+                      position="top"
+                      formatter={(value) => value.toLocaleString()}
+                      fill={getThemeColors(isDarkMode).textSecondary}
+                      fontSize={10}
+                      offset={10}
                     />
-                    <YAxis 
-                      stroke={getThemeColors(isDarkMode).textSecondary}
-                      tickFormatter={(value) => value.toLocaleString()}
-                      tick={{ fontSize: 11, fill: getThemeColors(isDarkMode).textSecondary }}
-                    />
-                    <Tooltip 
-                      formatter={(value) => [value.toLocaleString(), 'Orders']}
-                      labelFormatter={(label) => `Time: ${label}`}
-                      contentStyle={{
-                        backgroundColor: getThemeColors(isDarkMode).tooltipBg,
-                        border: `1px solid ${getThemeColors(isDarkMode).tooltipBorder}`,
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        color: getThemeColors(isDarkMode).text
-                      }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="orders" 
-                      stroke={getThemeColors(isDarkMode).primary}
-                      fill={getThemeColors(isDarkMode).primary}
-                      fillOpacity={0.3}
-                      name="Orders"
-                      strokeWidth={2}
-                      dot={{
-                        fill: getThemeColors(isDarkMode).primary,
-                        stroke: getThemeColors(isDarkMode).background,
-                        strokeWidth: 2,
-                        r: 4
-                      }}
-                      activeDot={{
-                        fill: getThemeColors(isDarkMode).primary,
-                        stroke: getThemeColors(isDarkMode).background,
-                        strokeWidth: 3,
-                        r: 6
-                      }}
-                    >
-                      <LabelList 
-                        dataKey="orders" 
-                        position="top" 
-                        formatter={(value) => value.toLocaleString()} 
-                        fill={getThemeColors(isDarkMode).textSecondary}
-                        fontSize={10}
-                        offset={10}
-                      />
-                    </Area>
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                  <div className="text-center">
-                    <p>No order evolution data available</p>
+                  </Area>
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                <div className="text-center">
+                  <p>No order evolution data available</p>
 
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Summary */}
-            {data.orderEvolution.length > 0 && (
-              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex justify-between items-center text-sm">
-                  <div className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Time Range:</span> {data.orderEvolution[0]?.time} - {data.orderEvolution[data.orderEvolution.length - 1]?.time} | 
-                    <span className="font-medium ml-2">Periods:</span> {data.orderEvolution.length} hours
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Data updated: {new Date().toLocaleTimeString()}
-                  </div>
                 </div>
               </div>
             )}
           </div>
+
+          {/* Summary */}
+          {data.orderEvolution.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="flex justify-between items-center text-sm">
+                <div className="text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Time Range:</span> {data.orderEvolution[0]?.time} - {data.orderEvolution[data.orderEvolution.length - 1]?.time} |
+                  <span className="font-medium ml-2">Periods:</span> {data.orderEvolution.length} hours
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Data updated: {new Date().toLocaleTimeString()}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Detail Modal */}
         <DetailModal
