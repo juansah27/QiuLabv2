@@ -21,16 +21,22 @@ const IdInput = ({
   targetDate,
   skuLama,
   skuBaru,
+  oldValue,
+  newValue,
   showYardLoc,
   showMarketplace,
   showTargetDate,
   showSkuReplace,
+  showUpdateFields,
+  updateFieldLabel = 'Value',
   onIdsChange,
   onYardLocChange,
   onMarketplaceChange,
   onTargetDateChange,
   onSkuLamaChange,
   onSkuBaruChange,
+  onOldValueChange,
+  onNewValueChange,
   startDate,
   endDate,
   onStartDateChange,
@@ -148,6 +154,36 @@ const IdInput = ({
         </>
       )}
 
+      {showUpdateFields && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="old-value">
+              {updateFieldLabel} Lama (yang akan diganti)
+            </Label>
+            <Input
+              id="old-value"
+              type="text"
+              placeholder={`Masukkan ${updateFieldLabel.toLowerCase()} lama`}
+              value={oldValue}
+              onChange={(e) => onOldValueChange(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="new-value">
+              {updateFieldLabel} Baru (pengganti)
+            </Label>
+            <Input
+              id="new-value"
+              type="text"
+              placeholder={`Masukkan ${updateFieldLabel.toLowerCase()} baru`}
+              value={newValue}
+              onChange={(e) => onNewValueChange(e.target.value)}
+            />
+          </div>
+        </>
+      )}
+
       {showDateRange && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -185,16 +221,22 @@ IdInput.propTypes = {
   targetDate: PropTypes.string.isRequired,
   skuLama: PropTypes.string.isRequired,
   skuBaru: PropTypes.string.isRequired,
+  oldValue: PropTypes.string,
+  newValue: PropTypes.string,
   showYardLoc: PropTypes.bool.isRequired,
   showMarketplace: PropTypes.bool.isRequired,
   showTargetDate: PropTypes.bool.isRequired,
   showSkuReplace: PropTypes.bool.isRequired,
+  showUpdateFields: PropTypes.bool,
+  updateFieldLabel: PropTypes.string,
   onIdsChange: PropTypes.func.isRequired,
   onYardLocChange: PropTypes.func.isRequired,
   onMarketplaceChange: PropTypes.func.isRequired,
   onTargetDateChange: PropTypes.func.isRequired,
   onSkuLamaChange: PropTypes.func.isRequired,
   onSkuBaruChange: PropTypes.func.isRequired,
+  onOldValueChange: PropTypes.func,
+  onNewValueChange: PropTypes.func,
   startDate: PropTypes.string,
   endDate: PropTypes.string,
   onStartDateChange: PropTypes.func,

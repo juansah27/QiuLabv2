@@ -168,37 +168,57 @@ UPDATE SPIDSTGJDANew.dbo.ORDER_LINE_SEG
 SET PRTNUM = '{SKUBARU}'
 WHERE ORDNUM IN ({IDS}) AND prtnum IN ({SKULAMA});`,
 
+  update_reference_number: `UPDATE receiving r
+SET r.reference_number = '{NEWVALUE}'
+WHERE
+  r.receiving_number IN ({IDS})
+  AND r.reference_number = '{OLDVALUE}';`,
+
+  update_po_number: `UPDATE receiving r
+JOIN receiving_list rl ON r.id = rl.receiving_id
+SET rl.po_number = '{NEWVALUE}'
+WHERE
+  r.receiving_number IN ({IDS})
+  AND rl.po_number = '{OLDVALUE}';`,
+
+  update_delivery_note: `UPDATE receiving r
+JOIN receiving_list rl ON r.id = rl.receiving_id
+SET rl.delivery_note = '{NEWVALUE}'
+WHERE
+  r.receiving_number IN ({IDS})
+  AND rl.delivery_note = '{OLDVALUE}';`,
+
   // Template Pero
   template_pero: `SELECT
-    ROW_NUMBER() OVER (ORDER BY SO.SystemRefId) AS [No],
-    SO.OrderDate AS  [Order Date],
-    SO.EntityId AS  [Sales Order],
-    SO.CustName AS  [Customer],
-    SO.DeliveryAddress AS [Alamat],
-    SO.CustPhone1 AS [Telp],
-    '' AS [Kode Pos],
-    SOL.ItemId AS  [Code SKU],
-    SOL.ItemName AS [Deskripsi],
-    SOL.QtyOrder AS  [Quantity],
-    '' AS [Schedule Pickup (date & time)],
-    SO.Awb AS [ AWB],
-    SO.TransporterCode [Transporter],
-    odl.ShipmentDateline AS [SLA Batal],
-    CASE
+ROW_NUMBER() OVER(ORDER BY SO.SystemRefId) AS[No],
+  SO.OrderDate AS[Order Date],
+SO.EntityId AS[Sales Order],
+SO.CustName AS[Customer],
+  SO.DeliveryAddress AS[Alamat],
+    SO.CustPhone1 AS[Telp],
+      '' AS[Kode Pos],
+SOL.ItemId AS[Code SKU],
+SOL.ItemName AS[Deskripsi],
+  SOL.QtyOrder AS[Quantity],
+    '' AS[Schedule Pickup(date & time)],
+SO.Awb AS[AWB],
+  SO.TransporterCode[Transporter],
+  odl.ShipmentDateline AS[SLA Batal],
+CASE
         WHEN LXML.prtnum IS NULL OR LXML.prtnum = '' THEN 'Pending'
         WHEN prt.prtnum IS NULL THEN 'Invalid SKU'
         WHEN HJDA.adddte IS NOT NULL THEN 'Bisa Diproses'
         WHEN SO.OrderStatus IS NOT NULL THEN SO.OrderStatus
         ELSE 'Aman'
-    END AS [Remark]
+    END AS[Remark]
 FROM Flexo_Db.dbo.SalesOrder SO
 LEFT JOIN Flexo_Db.dbo.Order_Dateline odl 
     ON SO.EntityId = odl.EntityID
 LEFT JOIN Flexo_Db.dbo.SalesOrderLine SOL 
     ON SOL.SystemRefId = SO.SystemRefId
-LEFT JOIN [10.6.0.6\jda].SPIDSTGEXML.dbo.ORDER_SEG HXML 
+LEFT JOIN[10.6.0.6\jda].SPIDSTGEXML.dbo.ORDER_SEG HXML 
     ON HXML.ORDNUM = SO.SystemRefId
-LEFT JOIN [10.6.0.6\jda].SPIDSTGEXML.dbo.ORDER_LINE_SEG LXML 
+LEFT JOIN[10.6.0.6\jda].SPIDSTGEXML.dbo.ORDER_LINE_SEG LXML 
     ON LXML.ORDNUM = SO.SystemRefId
 LEFT JOIN WMSPROD.dbo.prtmst prt 
     ON LXML.PRTNUM = prt.prtnum
@@ -208,100 +228,100 @@ LEFT JOIN WMSPROD.dbo.ord HJDA
 LEFT JOIN WMSPROD.dbo.ord_line LJDA 
     ON LJDA.ORDNUM = SO.SystemRefId
     AND LXML.prtnum = LJDA.prtnum
-WHERE SO.SystemRefId IN ({IDS});`,
+WHERE SO.SystemRefId IN({ IDS }); `,
 
   // Query SO & SOL
   query_so_sol: `SELECT SO.SystemId, so.MerchantName, so.SystemRefId, sol.ItemId, sol.ItemName, sol.QtyOrder, so.OrderDate, so.Awb, so.DtmCrt, so.OrderStatus, so.PaymentDate, so.origin, so.FulfilledByFlexo 
 FROM Flexo_Db.dbo.SalesOrder so
 LEFT JOIN Flexo_Db.dbo.SalesOrderLine sol 
     ON SOL.SystemRefId = SO.SystemRefId
-WHERE So.SystemRefId IN ({IDS});`,
+WHERE So.SystemRefId IN({ IDS }); `,
 
   // Query XML dan XML Line
-  query_xml_xml_line: `SELECT 
-      '' AS [Client ID],
-      hxml.ORDNUM,
-      lxml.PRTNUM,
-      lxml.ORDLIN,
-      lxml.ORDSLN,
-      lxml.ORDQTY,
-      lxml.INVSTS_PRG,
-      lxml.CANCELLED_FLG,
-      hxml.ORDTYP,
-      hxml.ENTDTE,
-      hxml.BTCUST,
-      lxml.MANDTE, 
-      lxml.TOT_PLN_PAL_QTY, 
-      lxml.DISTRO_TYP, 
-      lxml.ASSET_TYP,
-      hxml.SLOT,
-      hxml.STATUS,
-      hxml.TRANSFERDATE
-FROM [SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
+  query_xml_xml_line: `SELECT
+'' AS[Client ID],
+hxml.ORDNUM,
+  lxml.PRTNUM,
+  lxml.ORDLIN,
+  lxml.ORDSLN,
+  lxml.ORDQTY,
+  lxml.INVSTS_PRG,
+  lxml.CANCELLED_FLG,
+  hxml.ORDTYP,
+  hxml.ENTDTE,
+  hxml.BTCUST,
+  lxml.MANDTE,
+  lxml.TOT_PLN_PAL_QTY,
+  lxml.DISTRO_TYP,
+  lxml.ASSET_TYP,
+  hxml.SLOT,
+  hxml.STATUS,
+  hxml.TRANSFERDATE
+FROM[SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
 LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
     ON LXML.ORDNUM = hxml.ORDNUM
-WHERE hxml.ordnum IN ({IDS});`,
+WHERE hxml.ordnum IN({ IDS }); `,
 
   // Line Live
-  line_live: `SELECT 
-      '' AS [Client ID],
-      hxml.ORDNUM,
-      lxml.PRTNUM,
-      lxml.ORDLIN,
-      lxml.ORDSLN,
-      lxml.ORDQTY,
-      lxml.INVSTS_PRG,
-      lxml.CANCELLED_FLG,
-      hxml.ORDTYP
-FROM [SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
+  line_live: `SELECT
+'' AS[Client ID],
+hxml.ORDNUM,
+  lxml.PRTNUM,
+  lxml.ORDLIN,
+  lxml.ORDSLN,
+  lxml.ORDQTY,
+  lxml.INVSTS_PRG,
+  lxml.CANCELLED_FLG,
+  hxml.ORDTYP
+FROM[SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
 LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
     ON LXML.ORDNUM = hxml.ORDNUM
-WHERE hxml.ordnum IN ({IDS});`,
+WHERE hxml.ordnum IN({ IDS }); `,
 
   // Manifest Order
-  manifest_order: `SELECT 
-    so.SystemId,
-    mh.ManifestNumber,
-    mo.AWB,
-    mo.OrderNumber,
-    mo.SystemRefID,
-    mo.CreatedAt,
-    mo.Transporter,
-    mh.HandOverDate,
-    mh.CreatedBy
-FROM FlexoWebApp.dbo.ManifestOrder AS mo WITH (NOLOCK)
-LEFT JOIN FlexoWebApp.dbo.ManifestHeader AS mh WITH (NOLOCK)
+  manifest_order: `SELECT
+so.SystemId,
+  mh.ManifestNumber,
+  mo.AWB,
+  mo.OrderNumber,
+  mo.SystemRefID,
+  mo.CreatedAt,
+  mo.Transporter,
+  mh.HandOverDate,
+  mh.CreatedBy
+FROM FlexoWebApp.dbo.ManifestOrder AS mo WITH(NOLOCK)
+LEFT JOIN FlexoWebApp.dbo.ManifestHeader AS mh WITH(NOLOCK)
     ON mo.ManifestID = mh.ID
-LEFT JOIN Flexo_Db.dbo.SalesOrder AS so WITH (NOLOCK)
+LEFT JOIN Flexo_Db.dbo.SalesOrder AS so WITH(NOLOCK)
     ON mo.SystemRefID = so.SystemRefId
 WHERE mo.CreatedAt >= '{START_DATE}'
   AND mo.CreatedAt < '{END_DATE}'
   AND so.SystemId <> 'MPUP'
-ORDER BY mo.CreatedAt ASC;`,
+ORDER BY mo.CreatedAt ASC; `,
 
   // Data Cekin
-  data_cekin: `SELECT distinct ols.ORDNUM as OrderNumber		
-		,so.OrderStatus
-      ,ols.[ORDLIN]		
-      ,case when olr.Ordnum is not null then olr.[ItemIDReplace] else ols.PRTNUM end as ItemID		
-      ,case when olr.Ordnum is not null then olr.UserCheckin else ols.DISTRO_TYP  end as UPC		
-      , case when olr.Ordnum is not null then olr.[QtyReplace] else ols.ORDQTY end as OrderQty		
-	  ,case when olr.Ordnum is not null then olr.QtyCheckin else ols.TOT_PLN_PAL_QTY end as CheckInQty	
-      , case when olr.Ordnum is not null then olr.CheckinDate else ols.[MANDTE]  end  as CheckinDate		
-	  ,Case	
-	  when olr.Isreplacement=1 then 'REPLACE'	
+  data_cekin: `SELECT distinct ols.ORDNUM as OrderNumber
+  , so.OrderStatus
+  , ols.[ORDLIN]
+  ,case when olr.Ordnum is not null then olr.[ItemIDReplace] else ols.PRTNUM end as ItemID
+    ,case when olr.Ordnum is not null then olr.UserCheckin else ols.DISTRO_TYP  end as UPC
+      , case when olr.Ordnum is not null then olr.[QtyReplace] else ols.ORDQTY end as OrderQty
+        ,case when olr.Ordnum is not null then olr.QtyCheckin else ols.TOT_PLN_PAL_QTY end as CheckInQty
+          , case when olr.Ordnum is not null then olr.CheckinDate else ols.[MANDTE]  end as CheckinDate
+            , Case	
+	  when olr.Isreplacement = 1 then 'REPLACE'	
 	  when TOT_PLN_PAL_QTY = ORDQTY then 'OK'	
-	  when olr.QtyCheckin=QtyReplace then 'OK'	
-	  else 'ERROR' end as QtyCheck	
-	  ,'Online' as 'OrderType'	
-	  ,olr.IsReplacement	
-	  ,olr.ItemID as 'ItemOriginal'	
-	  ,olr.Qty as 'QtyOriginal'	
-  FROM [SPIDSTGEXML].[dbo].[ORDER_LINE_SEG] ols WITH(NOLOCK)		
-  LEFT OUTER JOIN [SPIDSTGEXML].[dbo].[ORDER_LINE_REPLACE] olr WITH(NOLOCK) on ols.ORDNUM= olr.Ordnum and ols.ORDLIN = olr.Ordlin 		
-  left outer join Flexo_db.dbo.SalesOrder so WITH(NOLOCK) on ols.ORDNUM=so.SystemRefId		
-  Left outer join Flexo_db.dbo.salesorderprint sp WITH(NOLOCK) on ols.ordnum = sp.systemrefid		
-  where (ols.MANDTE >='{START_DATE}' and ols.MANDTE < '{END_DATE}') and so.SystemId <>'MPUP'`,
+	  when olr.QtyCheckin = QtyReplace then 'OK'	
+	  else 'ERROR' end as QtyCheck
+  , 'Online' as 'OrderType'
+  , olr.IsReplacement
+  , olr.ItemID as 'ItemOriginal'
+  , olr.Qty as 'QtyOriginal'
+FROM[SPIDSTGEXML].[dbo].[ORDER_LINE_SEG] ols WITH(NOLOCK)		
+  LEFT OUTER JOIN[SPIDSTGEXML].[dbo].[ORDER_LINE_REPLACE] olr WITH(NOLOCK) on ols.ORDNUM = olr.Ordnum and ols.ORDLIN = olr.Ordlin 		
+  left outer join Flexo_db.dbo.SalesOrder so WITH(NOLOCK) on ols.ORDNUM = so.SystemRefId		
+  Left outer join Flexo_db.dbo.salesorderprint sp WITH(NOLOCK) on ols.ordnum = sp.systemrefid
+where(ols.MANDTE >= '{START_DATE}' and ols.MANDTE < '{END_DATE}') and so.SystemId <> 'MPUP'`,
 };
 
 /**

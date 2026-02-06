@@ -29,6 +29,8 @@ const GenerateQueries = () => {
   const [targetDate, setTargetDate] = useState(getDateOffset(-5));
   const [skuLama, setSkuLama] = useState('');
   const [skuBaru, setSkuBaru] = useState('');
+  const [oldValue, setOldValue] = useState('');
+  const [newValue, setNewValue] = useState('');
   const [startDate, setStartDate] = useState(getDateOffset(-1)); // Default query H-1
   const [endDate, setEndDate] = useState(getDateOffset(0)); // Default today
   const [generatedSql, setGeneratedSql] = useState('');
@@ -73,6 +75,16 @@ const GenerateQueries = () => {
   const handleSkuBaruChange = (value) => {
     setSkuBaru(value);
     setGeneratedSql(''); // Reset SQL output when SKU baru changes
+  };
+
+  const handleOldValueChange = (value) => {
+    setOldValue(value);
+    setGeneratedSql(''); // Reset SQL output when old value changes
+  };
+
+  const handleNewValueChange = (value) => {
+    setNewValue(value);
+    setGeneratedSql(''); // Reset SQL output when new value changes
   };
 
   const handleOutputFormatChange = (format) => {
@@ -189,6 +201,20 @@ const GenerateQueries = () => {
       }
     }
 
+    // Validasi untuk Update Reference Number, PO Number, dan Delivery Note
+    if (selectedGroup === 'update_reference_number' ||
+      selectedGroup === 'update_po_number' ||
+      selectedGroup === 'update_delivery_note') {
+      if (!oldValue.trim()) {
+        setError('Nilai lama diperlukan untuk grup update ini');
+        return false;
+      }
+      if (!newValue.trim()) {
+        setError('Nilai baru diperlukan untuk grup update ini');
+        return false;
+      }
+    }
+
     // Validasi nama field untuk WHERE clause
     if (selectedGroup === 'query_in_custom' && outputFormat === 'where_clause' && !fieldName.trim()) {
       setError('Nama kolom diperlukan untuk format WHERE clause');
@@ -256,6 +282,14 @@ const GenerateQueries = () => {
         // Process SKU Baru (new SKU - single value)
         const skuBaruProcessed = processId(skuBaru);
         sql = sql.replace(/\{SKUBARU\}/g, skuBaruProcessed);
+      } else if (selectedGroup === 'update_reference_number' ||
+        selectedGroup === 'update_po_number' ||
+        selectedGroup === 'update_delivery_note') {
+        // Replace old and new values for update queries
+        const oldValueProcessed = processId(oldValue);
+        const newValueProcessed = processId(newValue);
+        sql = sql.replace(/\{OLDVALUE\}/g, oldValueProcessed);
+        sql = sql.replace(/\{NEWVALUE\}/g, newValueProcessed);
       } else if (selectedGroup === 'manifest_order' || selectedGroup === 'data_cekin') {
         // Replace StartDate & EndDate
         sql = sql.replace(/\{START_DATE\}/g, startDate);
@@ -314,16 +348,28 @@ const GenerateQueries = () => {
                     targetDate={targetDate}
                     skuLama={skuLama}
                     skuBaru={skuBaru}
+                    oldValue={oldValue}
+                    newValue={newValue}
                     showYardLoc={false}
                     showMarketplace={false}
                     showTargetDate={selectedGroup === 'update_dtmcrt_entdte'}
                     showSkuReplace={selectedGroup === 'replace_sku'}
+                    showUpdateFields={selectedGroup === 'update_reference_number' ||
+                      selectedGroup === 'update_po_number' ||
+                      selectedGroup === 'update_delivery_note'}
+                    updateFieldLabel={
+                      selectedGroup === 'update_reference_number' ? 'Reference Number' :
+                        selectedGroup === 'update_po_number' ? 'PO Number' :
+                          selectedGroup === 'update_delivery_note' ? 'Delivery Note' : 'Value'
+                    }
                     onIdsChange={handleIdsChange}
                     onYardLocChange={handleYardLocChange}
                     onMarketplaceChange={handleMarketplaceChange}
                     onTargetDateChange={handleTargetDateChange}
                     onSkuLamaChange={handleSkuLamaChange}
                     onSkuBaruChange={handleSkuBaruChange}
+                    onOldValueChange={handleOldValueChange}
+                    onNewValueChange={handleNewValueChange}
                     isCustomInQuery={selectedGroup === 'query_in_custom'}
                     startDate={startDate}
                     endDate={endDate}
