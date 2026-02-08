@@ -283,6 +283,7 @@ def run_monitoring_query():
                 # OPTIMIZED VERSION: Removed slow EXISTS subqueries
                 monitoring_query = f"""
                 SELECT
+                    -- 1) Identitas Order
                     CASE 
                         WHEN so.SystemId = 'MPSH' THEN 'SHOPEE'
                         WHEN so.SystemId = 'MSTP' THEN 'TOKOPEDIA'
@@ -318,14 +319,19 @@ def run_monitoring_query():
                     END AS Brand,
 
                     so.SystemRefId AS [Order Number],
-                    so.OrderStatus,
-                    so.Awb AS [No. Resi],
-                    so.OrderedById,
 
                     CASE 
-                        WHEN COUNT(ol.ordnum) > 0 THEN 'Yes'
-                        ELSE 'No'
-                    END AS [Status Interfaced],
+                        WHEN so.OrderDate >= CAST(CONVERT(varchar, GETDATE(), 23) + ' 00:00:00' AS DATETIME)
+                         AND so.OrderDate <  CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME) THEN 'Batch 1'
+                        WHEN so.OrderDate >= CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME)
+                         AND so.OrderDate <= CAST(CONVERT(varchar, GETDATE(), 23) + ' 23:59:59' AS DATETIME) THEN 'Batch 2'
+                        ELSE 'Out of Range'
+                    END AS Batch,
+
+                    so.OrderDate,
+
+                    -- 2) Status Proses Utama
+                    so.OrderStatus,
 
                     CASE 
                         WHEN so.SystemId = 'MPSH' THEN 
@@ -338,34 +344,65 @@ def run_monitoring_query():
                         ELSE 'Follow Up!'
                     END AS [Status SC],
 
-                    CASE 
-                        WHEN so.OrderDate >= CAST(CONVERT(varchar, GETDATE(), 23) + ' 00:00:00' AS DATETIME)
-                         AND so.OrderDate <  CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME) THEN 'Batch 1'
-                        WHEN so.OrderDate >= CAST(CONVERT(varchar, GETDATE(), 23) + ' 17:00:01' AS DATETIME)
-                         AND so.OrderDate <= CAST(CONVERT(varchar, GETDATE(), 23) + ' 23:59:59' AS DATETIME) THEN 'Batch 2'
-                        ELSE 'Out of Range'
-                    END AS Batch,
+                    odl.ShipmentDateline AS [SLA],
+
+                    -- 3) Tracking Pengiriman
+                    so.Awb AS [No. Resi],
+                    so.TransporterCode AS Transporter,
 
                     CASE 
-                        WHEN (SELECT COUNT(DISTINCT api.PRTNUM) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) WHERE api.ORDNUM = so.SystemRefId) = 0 THEN ''
-                        WHEN (SELECT COUNT(DISTINCT api.PRTNUM) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) WHERE api.ORDNUM = so.SystemRefId) > 
-                             (SELECT COUNT(DISTINCT prt.prtnum) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) ON prt.prtnum = api.PRTNUM WHERE api.ORDNUM = so.SystemRefId)
+                        WHEN so.Origin = 1 OR so.Origin IS NULL THEN 'Flexofast-TGR'
+                        WHEN so.Origin = 3 THEN 'Flexofast-SBY'
+                        WHEN so.Origin = 4 THEN 'Flexofast-BLR'
+                        ELSE 'Unknown'
+                    END AS [WH Loc],
+
+                    -- 4) Proses Internal Flexo
+                    so.FulfilledByFlexo AS [Diproses Flexo],
+
+                    -- 5) Timeline Sistem
+                    so.DtmCrt AS [Data Masuk CMS],
+                    (SELECT MIN(api.ENTDTE) 
+                        FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) 
+                        WHERE api.ORDNUM = so.SystemRefId
+                    ) AS [Data Masuk XML],
+
+                    MAX(ol.moddte) AS [Interface Date],
+
+                    CASE 
+                        WHEN COUNT(ol.ordnum) > 0 THEN 'Yes'
+                        ELSE 'No'
+                    END AS [Status Interfaced],
+
+                    -- 6) Validasi Produk
+                    CASE 
+                        WHEN (SELECT COUNT(DISTINCT api.PRTNUM) 
+                              FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) 
+                              WHERE api.ORDNUM = so.SystemRefId) = 0 THEN ''
+
+                        WHEN (SELECT COUNT(DISTINCT api.PRTNUM) 
+                              FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) 
+                              WHERE api.ORDNUM = so.SystemRefId) > 
+                             (SELECT COUNT(DISTINCT prt.prtnum) 
+                              FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) 
+                              LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) 
+                                     ON prt.prtnum = api.PRTNUM 
+                              WHERE api.ORDNUM = so.SystemRefId)
+
                         THEN 
                             'Invalid SKU ' + 
                             ISNULL(STUFF((
                                 SELECT ', ' + api.PRTNUM
                                 FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK)
-                                LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) ON prt.prtnum = api.PRTNUM
-                                WHERE api.ORDNUM = so.SystemRefId AND prt.prtnum IS NULL
+                                LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) 
+                                       ON prt.prtnum = api.PRTNUM
+                                WHERE api.ORDNUM = so.SystemRefId 
+                                  AND prt.prtnum IS NULL
                                 FOR XML PATH(''), TYPE
                             ).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), '')
+
                         ELSE ''
                     END AS [Validasi SKU],
-
-                    CASE 
-                        WHEN DATEDIFF(MINUTE, so.OrderDate, GETDATE()) > 30 THEN 'Lebih Dari 1 jam'
-                        ELSE 'Kurang Dari 1 jam'
-                    END AS [Status Durasi],
 
                     ISNULL(STUFF((
                         SELECT ', ' + api.PRTNUM
@@ -374,21 +411,16 @@ def run_monitoring_query():
                         FOR XML PATH(''), TYPE
                     ).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), '') AS SKU,
 
-                    so.OrderDate,
-                    so.DtmCrt AS [Data Masuk CMS],
-                    (SELECT MIN(api.ENTDTE) FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) WHERE api.ORDNUM = so.SystemRefId) AS [Data Masuk XML],
-                    so.TransporterCode AS Transporter,
-                    so.FulfilledByFlexo AS [Diproses Flexo],
-                    MAX(ol.moddte) AS [Interface Date],
-
                     CASE 
-                        WHEN so.Origin = 1 OR so.Origin IS NULL THEN 'Flexofast-TGR'
-                        WHEN so.Origin = 3 THEN 'Flexofast-SBY'
-                        WHEN so.Origin = 4 THEN 'Flexofast-BLR'
-                        ELSE 'Unknown'
-                    END AS [WH Loc]
+                        WHEN DATEDIFF(MINUTE, so.OrderDate, GETDATE()) > 30 THEN 'Lebih Dari 1 jam'
+                        ELSE 'Kurang Dari 1 jam'
+                    END AS [Status Durasi]
 
                 FROM Flexo_Db.dbo.SalesOrder so WITH (NOLOCK)
+
+                LEFT JOIN Flexo_Db.dbo.Order_Dateline odl WITH (NOLOCK)
+                    ON so.EntityId = odl.EntityID
+
                 LEFT JOIN WMSPROD.dbo.ord_line ol WITH (NOLOCK)
                     ON ol.ordnum = so.SystemRefId
 
@@ -401,6 +433,7 @@ def run_monitoring_query():
                     so.OrderDate,
                     so.DtmCrt,
                     so.OrderStatus,
+                    odl.ShipmentDateline,
                     so.Awb,
                     so.TransporterCode,
                     so.Origin,
@@ -2665,8 +2698,8 @@ def get_late_sku_data():
             WITH WMS_3DAYS AS (
                 SELECT DISTINCT
                     ORDNUM, ORDLIN, ORDSLN, PRTNUM
-                FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG
-                WHERE ENTDTE >= DATEADD(DAY, -3, GETDATE())
+                FROM SPIDSTGJDANew.dbo.ORDER_LINE_SEG WITH (NOLOCK)
+                WHERE ENTDTE >= DATEADD(DAY, -5, GETDATE())
             ),
             XML_LAST AS (
                 SELECT
@@ -2675,7 +2708,7 @@ def get_late_sku_data():
                     x.ORDLIN,
                     x.ORDSLN,
                     MAX(x.ENTDTE) AS MaxEntdte
-                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG x
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG x WITH (NOLOCK)
                 INNER JOIN WMS_3DAYS w
                     ON w.ORDNUM = x.ORDNUM
                 GROUP BY
@@ -2773,17 +2806,17 @@ def get_late_sku_2_data():
                     so.SystemRefId,
                     so.OrderStatus,
                     SUM(sol.QtyOrder) AS SOLQty
-                FROM Flexo_db.dbo.SalesOrder so
-                INNER JOIN Flexo_db.dbo.SalesOrderLine sol ON so.SalesOrderId = sol.SalesOrderId
-                WHERE so.OrderDate >'2026-01-30' and so.SystemId in('MPSH','MPTS','MPDS','JUBELIO')
+                FROM Flexo_db.dbo.SalesOrder so WITH (NOLOCK)
+                INNER JOIN Flexo_db.dbo.SalesOrderLine sol WITH (NOLOCK) ON so.SalesOrderId = sol.SalesOrderId
+                WHERE so.OrderDate >= DATEADD(DAY, -5, GETDATE()) and so.SystemId in('MPSH','MPTS','MPDS','JUBELIO')
                 GROUP BY so.SystemRefId, so.OrderStatus, so.MerchantName
             ),
             CTE2 AS (
                 SELECT 
                     ol.ORDNUM AS SystemRefId, 
                     SUM(ol.ORDQTY) AS XMLQty
-                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ol
-                WHERE ENTDTE >'2026-01-30'
+                FROM SPIDSTGEXML.dbo.ORDER_LINE_SEG ol WITH (NOLOCK)
+                WHERE ENTDTE >= DATEADD(DAY, -5, GETDATE())
                 GROUP BY ol.ORDNUM
             )
             SELECT 
@@ -2892,7 +2925,7 @@ def get_invalid_sku_data():
                 ON lseg.prtnum = sku.prtnum
                AND sku.wh_id_tmpl IN ('WMD1', 'WMD2')
             WHERE 
-                so.OrderDate >= DATEADD(DAY, -3, CAST(GETDATE() AS DATE))
+                so.OrderDate >= DATEADD(DAY, -5, CAST(GETDATE() AS DATE))
                 AND so.FulfilledByFlexo <> '0'
                 AND so.orderstatus <> 'cancelled'
                 AND sku.prtnum IS NULL
@@ -2987,7 +3020,7 @@ def get_duplicate_orders_data():
                     SELECT 1
                     FROM SPIDSTGEXML.dbo.ORDER_SEG os WITH (NOLOCK)
                     WHERE os.ORDNUM = ols.ORDNUM
-                      AND os.TRANSFERDATE >= DATEADD(DAY, -3, GETDATE())
+                      AND os.TRANSFERDATE >= DATEADD(DAY, -5, GETDATE())
                 )
             ) a
             WHERE rn > 1

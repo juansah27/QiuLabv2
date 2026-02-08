@@ -860,10 +860,10 @@ const MonitoringOrder = () => {
   const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
 
   // New state for the 3 additional grids + SKU Telat Masuk 2
-  const [lateSkuData, setLateSkuData] = useState([]);
-  const [lateSku2Data, setLateSku2Data] = useState([]);
-  const [invalidSkuData, setInvalidSkuData] = useState([]);
-  const [duplicateOrderData, setDuplicateOrderData] = useState([]);
+  const [lateSkuData, setLateSkuData] = useState(null);
+  const [lateSku2Data, setLateSku2Data] = useState(null);
+  const [invalidSkuData, setInvalidSkuData] = useState(null);
+  const [duplicateOrderData, setDuplicateOrderData] = useState(null);
   const [loadingAdditionalData, setLoadingAdditionalData] = useState(false);
   const [additionalDataSources, setAdditionalDataSources] = useState({
     lateSku: 'sql',
@@ -1302,35 +1302,41 @@ const MonitoringOrder = () => {
   const fetchAdditionalData = useCallback(async () => {
     try {
       setLoadingAdditionalData(true);
+      // Reset to null on start to show loading or keep previous if needed? 
+      // User wants N/A if timeout/fail. Best to start with what we have or reset?
+      // Let's reset to null so we don't show stale data if it fails this time?
+      // Or maybe keep stale? "tambahkan jika query tidak berhasil ... maka semua card N/A".
+      // Implies: if this specific fetch fails, show N/A.
+      setLateSkuData(null);
+      setLateSku2Data(null);
+      setInvalidSkuData(null);
+      setDuplicateOrderData(null);
+
       const token = localStorage.getItem('token');
 
+      // Add timeout for the batch request
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 60000); // 60s timeout
+      });
+
       // Parallel fetching for all 4 endpoints including late-sku-2
-      const [lateSkuResponse, lateSku2Response, invalidSkuResponse, duplicateOrderResponse] = await Promise.allSettled([
+      const fetchPromise = Promise.allSettled([
         fetch('/api/query/late-sku', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept-Encoding': 'gzip, deflate, br'
-          }
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept-Encoding': 'gzip, deflate, br' }
         }),
         fetch('/api/query/late-sku-2', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept-Encoding': 'gzip, deflate, br'
-          }
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept-Encoding': 'gzip, deflate, br' }
         }),
         fetch('/api/query/invalid-sku', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept-Encoding': 'gzip, deflate, br'
-          }
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept-Encoding': 'gzip, deflate, br' }
         }),
         fetch('/api/query/duplicate-orders', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept-Encoding': 'gzip, deflate, br'
-          }
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept-Encoding': 'gzip, deflate, br' }
         })
       ]);
+
+      const results = await Promise.race([fetchPromise, timeoutPromise]);
+      const [lateSkuResponse, lateSku2Response, invalidSkuResponse, duplicateOrderResponse] = results;
 
       // Process Late SKU response
       if (lateSkuResponse.status === 'fulfilled' && lateSkuResponse.value.ok) {
@@ -1339,12 +1345,16 @@ const MonitoringOrder = () => {
           if (lateSkuResult.status === 'success') {
             setLateSkuData(lateSkuResult.data || []);
             setAdditionalDataSources(prev => ({ ...prev, lateSku: lateSkuResult.data_source || 'sql' }));
+          } else {
+            setLateSkuData(null); // Error in status
           }
         } catch (err) {
           console.warn('Error parsing late SKU data:', err);
+          setLateSkuData(null);
         }
       } else {
         console.warn('Late SKU API failed:', lateSkuResponse.status);
+        setLateSkuData(null);
       }
 
       // Process Late SKU 2 response
@@ -1354,12 +1364,16 @@ const MonitoringOrder = () => {
           if (lateSku2Result.status === 'success') {
             setLateSku2Data(lateSku2Result.data || []);
             setAdditionalDataSources(prev => ({ ...prev, lateSku2: lateSku2Result.data_source || 'sql' }));
+          } else {
+            setLateSku2Data(null);
           }
         } catch (err) {
           console.warn('Error parsing late SKU 2 data:', err);
+          setLateSku2Data(null);
         }
       } else {
         console.warn('Late SKU 2 API failed:', lateSku2Response.status);
+        setLateSku2Data(null);
       }
 
       // Process Invalid SKU response
@@ -1369,12 +1383,16 @@ const MonitoringOrder = () => {
           if (invalidSkuResult.status === 'success') {
             setInvalidSkuData(invalidSkuResult.data || []);
             setAdditionalDataSources(prev => ({ ...prev, invalidSku: invalidSkuResult.data_source || 'sql' }));
+          } else {
+            setInvalidSkuData(null);
           }
         } catch (err) {
           console.warn('Error parsing invalid SKU data:', err);
+          setInvalidSkuData(null);
         }
       } else {
         console.warn('Invalid SKU API failed:', invalidSkuResponse.status);
+        setInvalidSkuData(null);
       }
 
       // Process Duplicate Orders response
@@ -1384,16 +1402,25 @@ const MonitoringOrder = () => {
           if (duplicateOrderResult.status === 'success') {
             setDuplicateOrderData(duplicateOrderResult.data || []);
             setAdditionalDataSources(prev => ({ ...prev, duplicateOrders: duplicateOrderResult.data_source || 'sql' }));
+          } else {
+            setDuplicateOrderData(null);
           }
         } catch (err) {
           console.warn('Error parsing duplicate orders data:', err);
+          setDuplicateOrderData(null);
         }
       } else {
         console.warn('Duplicate Orders API failed:', duplicateOrderResponse.status);
+        setDuplicateOrderData(null);
       }
 
     } catch (err) {
       console.error('Error in fetchAdditionalData:', err);
+      // Case of timeout or other errors -> set all to null (N/A)
+      setLateSkuData(null);
+      setLateSku2Data(null);
+      setInvalidSkuData(null);
+      setDuplicateOrderData(null);
     } finally {
       setLoadingAdditionalData(false);
     }
@@ -2057,72 +2084,80 @@ const MonitoringOrder = () => {
               {/* SKU Mismatch: XML vs JDA */}
               <StatCard
                 title="SKU Mismatch: XML vs JDA"
-                value={lateSkuData.length}
+                value={lateSkuData ? lateSkuData.length : 'N/A'}
                 icon={ExclamationTriangleIcon}
                 color="red"
                 loading={loadingAdditionalData}
                 onClick={() => {
-                  setModalState({
-                    isOpen: true,
-                    title: 'SKU Mismatch: XML vs JDA Details',
-                    data: lateSkuData,
-                    fullData: lateSkuData,
-                    loading: false
-                  });
+                  if (lateSkuData) {
+                    setModalState({
+                      isOpen: true,
+                      title: 'SKU Mismatch: XML vs JDA Details',
+                      data: lateSkuData,
+                      fullData: lateSkuData,
+                      loading: false
+                    });
+                  }
                 }}
               />
 
               {/* SKU Mismatch: SOL vs XML */}
               <StatCard
                 title="SKU Mismatch: SOL vs XML"
-                value={lateSku2Data.length}
+                value={lateSku2Data ? lateSku2Data.length : 'N/A'}
                 icon={ExclamationTriangleIcon}
                 color="pink"
                 loading={loadingAdditionalData}
                 onClick={() => {
-                  setModalState({
-                    isOpen: true,
-                    title: 'SKU Mismatch: SOL vs XML Details',
-                    data: lateSku2Data,
-                    fullData: lateSku2Data,
-                    loading: false
-                  });
+                  if (lateSku2Data) {
+                    setModalState({
+                      isOpen: true,
+                      title: 'SKU Mismatch: SOL vs XML Details',
+                      data: lateSku2Data,
+                      fullData: lateSku2Data,
+                      loading: false
+                    });
+                  }
                 }}
               />
 
               {/* Invalid SKU */}
               <StatCard
                 title="Invalid SKU"
-                value={invalidSkuData.length}
+                value={invalidSkuData ? invalidSkuData.length : 'N/A'}
                 icon={XCircleIcon}
                 color="orange"
                 loading={loadingAdditionalData}
                 onClick={() => {
-                  setModalState({
-                    isOpen: true,
-                    title: 'Invalid SKU Details',
-                    data: invalidSkuData,
-                    fullData: invalidSkuData,
-                    loading: false
-                  });
+                  if (invalidSkuData) {
+                    setModalState({
+                      isOpen: true,
+                      title: 'Invalid SKU Details',
+                      data: invalidSkuData,
+                      fullData: invalidSkuData,
+                      loading: false
+                    });
+                  }
                 }}
               />
 
               {/* Order Duplikat */}
               <StatCard
                 title="Order Duplikat"
-                value={duplicateOrderData.length}
+                value={duplicateOrderData ? duplicateOrderData.length : 'N/A'}
                 icon={ClipboardDocumentIcon}
                 color="purple"
                 loading={loadingAdditionalData}
                 onClick={() => {
-                  setModalState({
-                    isOpen: true,
-                    title: 'Order Duplikat Details',
-                    data: duplicateOrderData,
-                    fullData: duplicateOrderData,
-                    loading: false
-                  });
+                  if (duplicateOrderData) {
+                    setModalState({
+                      isOpen: true,
+                      title: 'Order Duplikat Details',
+                      data: duplicateOrderData,
+                      fullData: duplicateOrderData,
+                      loading: false
+                    });
+                  }
                 }}
               />
             </>
