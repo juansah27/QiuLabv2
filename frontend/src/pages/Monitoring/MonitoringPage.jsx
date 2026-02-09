@@ -262,15 +262,9 @@ const MonitoringPage = () => {
     if (!date) return 'N/A';
     try {
       const d = new Date(date);
-      // Convert to Asia/Jakarta timezone
-      const options = { timeZone: 'Asia/Jakarta' };
-      const year = d.toLocaleString('en-CA', { year: 'numeric', ...options });
-      const month = d.toLocaleString('en-CA', { month: '2-digit', ...options });
-      const day = d.toLocaleString('en-CA', { day: '2-digit', ...options });
-      const hour = d.toLocaleString('en-CA', { hour: '2-digit', hour12: false, ...options });
-      const minute = d.toLocaleString('en-CA', { minute: '2-digit', ...options });
-      const second = d.toLocaleString('en-CA', { second: '2-digit', ...options });
-      return `${year}:${month}:${day} ${hour}:${minute}:${second}`;
+      if (isNaN(d.getTime())) return date;
+      const pad = (num) => String(num).padStart(2, '0');
+      return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
     } catch {
       return date;
     }

@@ -454,20 +454,22 @@ const QueryResultTable = ({
     'Order Number',
     'Remark',
     'Batch',
-    'Validasi SKU',
-    'OrderStatus',
-    'No. Resi',
-    'Status Interfaced',
-    'Status SC',
-    'Status Durasi',
-    'SKU',
     'OrderDate',
+    'OrderStatus',
+    'Status SC',
+    'No. Resi',
+    'Transporter',
+    'WH Loc',
+    'Diproses Flexo',
+    'Tanggal Pembayaran',
+    'SLA',
     'Data Masuk CMS',
     'Data Masuk XML',
-    'Transporter',
-    'Diproses Flexo',
     'Interface Date',
-    'WH Loc',
+    'Status Interfaced',
+    'Validasi SKU',
+    'Status Durasi',
+    'SKU'
   ], []);
 
   // Mendapatkan kolom dari data dengan urutan yang ditentukan
@@ -1018,6 +1020,12 @@ const QueryResultTable = ({
             // Gunakan nilai remark dari localStorage jika yang diedit
             if (header.toLowerCase() === 'remark') {
               value = getRemarkValue(row, header);
+            }
+
+            // Cek apakah kolom adalah kolom tanggal dan format jika ya
+            const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'created_at', 'updated_at', 'tanggal_transaksi', 'tanggalpembayaran'];
+            if (dateColumnNames.includes(header.toLowerCase().replace(/[^a-z]/g, ''))) {
+              value = formatDateString(value);
             }
 
             // Handle nilai null/undefined
@@ -1754,6 +1762,16 @@ const QueryResultTable = ({
     }
   };
 
+  // Helper untuk format tanggal
+  const formatDateString = (value) => {
+    if (!value) return value;
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+
+    const pad = (num) => String(num).padStart(2, '0');
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+  };
+
   // Modifikasi renderCellValue untuk menggunakan RemarkInput yang dioptimasi
   const renderCellValue = (value, row, column, rowIndex) => {
     if (column.editable) {
@@ -1813,8 +1831,12 @@ const QueryResultTable = ({
       return value ? 'Ya' : 'Tidak';
     }
 
-    if (value instanceof Date) {
-      return value.toLocaleString();
+    // Check if it's a date column based on its name or type
+    const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
+    if (dateColumnNames.includes(column.label.toLowerCase().replace(/[^a-z]/g, '')) ||
+      dateColumnNames.includes(column.id.toLowerCase().replace(/[^a-z]/g, '')) ||
+      value instanceof Date) {
+      return formatDateString(value);
     }
 
     // Khusus untuk SystemRefId, hilangkan spasi dan baris baru

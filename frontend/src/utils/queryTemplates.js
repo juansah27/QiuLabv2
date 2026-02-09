@@ -65,7 +65,7 @@ GROUP BY
 ORDER BY ID ASC;
 
 -- CEK SUDAH ADA ORDER BELUM
-SELECT so.PartnerId, so.SystemRefId AS OrderNumber, sol.ItemId AS SKUBundle, so.OrderDate
+SELECT so.PartnerId, so.SystemRefId AS OrderNumber, sol.ItemId AS SKUBundle, so.OrderDate, so.OrderStatus
 FROM Flexo_Db.dbo.SalesOrderLine sol
 LEFT JOIN Flexo_Db.dbo.SalesOrder so
     ON so.SystemRefId = sol.SystemRefId

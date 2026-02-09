@@ -361,6 +361,8 @@ def run_monitoring_query():
                     so.FulfilledByFlexo AS [Diproses Flexo],
 
                     -- 5) Timeline Sistem
+                    so.PaymentDate AS [Tanggal Pembayaran],
+                    odl.ShipmentDateline AS [SLA],
                     so.DtmCrt AS [Data Masuk CMS],
                     (SELECT MIN(api.ENTDTE) 
                         FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) 
@@ -385,8 +387,8 @@ def run_monitoring_query():
                               WHERE api.ORDNUM = so.SystemRefId) > 
                              (SELECT COUNT(DISTINCT prt.prtnum) 
                               FROM flexo_api.dbo.ORDER_LINE_SEG api WITH (NOLOCK) 
-                              LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) 
-                                     ON prt.prtnum = api.PRTNUM 
+                               LEFT JOIN WMSPROD.dbo.prtmst prt WITH (NOLOCK) 
+                                      ON prt.prtnum = api.PRTNUM 
                               WHERE api.ORDNUM = so.SystemRefId)
 
                         THEN 
@@ -431,6 +433,7 @@ def run_monitoring_query():
                     so.SystemRefId,
                     so.MerchantName,
                     so.OrderDate,
+                    so.PaymentDate,
                     so.DtmCrt,
                     so.OrderStatus,
                     odl.ShipmentDateline,
