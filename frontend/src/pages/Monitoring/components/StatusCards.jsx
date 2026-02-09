@@ -432,7 +432,18 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
         'IN_Cancel': ['#a78bfa', '#f472b6']
       },
       PIE_COLORS: ['#0ea5e9', '#8b5cf6', '#f472b6', '#4ade80'],
-      STATUS_COLORS: statusColors
+      STATUS_COLORS: statusColors,
+      MARKETPLACE_COLORS: {
+        'SHOPEE': '#EE4D2D',
+        'TOKOPEDIA': '#03AC0E',
+        'LAZADA': '#00008F',
+        'TIKTOK': '#000105',
+        'BLIBLI': '#0095DA',
+        'ZALORA': '#000000',
+        'WEB': '#3B82F6',
+        'SHOPEE_FOOD': '#EE4D2D',
+        'DEFAULT': '#9ca3af'
+      }
     };
   }, []);
 
@@ -1113,7 +1124,6 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                   />
                   <Bar
                     dataKey="value"
-                    fill={chartColors.primaryBlue}
                     onClick={(data) => handleChartClick('SystemId', data.name)}
                     style={{ cursor: 'pointer' }}
                     isAnimationActive={chartSettings.isAnimationActive}
@@ -1132,13 +1142,17 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                       </text>
                     )}
                   >
-                    {processedData.systemIdData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill="url(#batchGradient)"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    ))}
+                    {processedData.systemIdData.map((entry, index) => {
+                      const name = entry.name.toUpperCase();
+                      const color = chartColors.MARKETPLACE_COLORS[name] || chartColors.MARKETPLACE_COLORS['DEFAULT'];
+                      return (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={color}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      );
+                    })}
                   </Bar>
                   <defs>
                     <linearGradient id="batchGradient" x1="0" y1="0" x2="0" y2="1">
