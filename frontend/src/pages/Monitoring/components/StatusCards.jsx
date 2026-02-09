@@ -1172,7 +1172,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={processedData.orderDateData}
-                  margin={{ top: 10, right: 15, left: 10, bottom: 65 }}
+                  margin={{ top: 10, right: 15, left: 10, bottom: 20 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -1201,10 +1201,10 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                     }}
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={45}
                     interval="preserveStartEnd"
                     minTickGap={10}
-                    dy={10}
+                    dy={5}
                   />
                   <YAxis
                     stroke={themeColors.textColor}
