@@ -442,6 +442,9 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
         'ZALORA': '#000000',
         'WEB': '#3B82F6',
         'SHOPEE_FOOD': '#EE4D2D',
+        'DESTY': '#304daa',
+        'JUBELIO': '#6b46c1',
+        'GINEE': '#10b981',
         'DEFAULT': '#9ca3af'
       }
     };
