@@ -263,7 +263,7 @@ const GenerateQueries = () => {
           return `(\'${id}\')${isLast ? '' : ','}`;
         }).join('\n');
       } else {
-        sql = sql.replace(/\{IDS\}/g, idList.map(id => `\'${id}\'`).join(','));
+        sql = sql.replace(/\{\s*IDS\s*\}/g, idList.map(id => `\'${id}\'`).join(','));
       }
 
 

@@ -228,14 +228,14 @@ LEFT JOIN WMSPROD.dbo.ord HJDA
 LEFT JOIN WMSPROD.dbo.ord_line LJDA 
     ON LJDA.ORDNUM = SO.SystemRefId
     AND LXML.prtnum = LJDA.prtnum
-WHERE SO.SystemRefId IN({ IDS }); `,
+WHERE SO.SystemRefId IN({IDS}); `,
 
   // Query SO & SOL
   query_so_sol: `SELECT SO.SystemId, so.MerchantName, so.SystemRefId, sol.ItemId, sol.ItemName, sol.QtyOrder, so.OrderDate, so.Awb, so.DtmCrt, so.OrderStatus, so.PaymentDate, so.origin, so.FulfilledByFlexo 
 FROM Flexo_Db.dbo.SalesOrder so
 LEFT JOIN Flexo_Db.dbo.SalesOrderLine sol 
     ON SOL.SystemRefId = SO.SystemRefId
-WHERE So.SystemRefId IN({ IDS }); `,
+WHERE So.SystemRefId IN({IDS}); `,
 
   // Query XML dan XML Line
   query_xml_xml_line: `SELECT
@@ -260,7 +260,7 @@ hxml.ORDNUM,
 FROM[SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
 LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
     ON LXML.ORDNUM = hxml.ORDNUM
-WHERE hxml.ordnum IN({ IDS }); `,
+WHERE hxml.ordnum IN({IDS}); `,
 
   // Line Live
   line_live: `SELECT
@@ -276,7 +276,7 @@ hxml.ORDNUM,
 FROM[SPIDSTGEXML].[dbo].[ORDER_SEG] hxml
 LEFT JOIN SPIDSTGEXML.dbo.ORDER_LINE_SEG lxml 
     ON LXML.ORDNUM = hxml.ORDNUM
-WHERE hxml.ordnum IN({ IDS }); `,
+WHERE hxml.ordnum IN({IDS}); `,
 
   // Manifest Order
   manifest_order: `SELECT
