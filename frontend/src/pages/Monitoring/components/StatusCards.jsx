@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer, PieChart, Pie, Legend, Tooltip, Sector, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, CartesianGrid, Line, Label, LabelList, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer, PieChart, Pie, Legend, Tooltip, Sector, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, CartesianGrid, Line, Label, LabelList, ReferenceLine, AreaChart, Area } from 'recharts';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { normalizeStatusName, getStatusGroups, getStatusColors, getStatusPriorities } from '../../../config/statusGroups';
 
@@ -1170,9 +1170,9 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
           <div className="h-80">
             {processedData.orderDateData && processedData.orderDateData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
+                <AreaChart
                   data={processedData.orderDateData}
-                  margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
+                  margin={{ top: 10, right: 15, left: 10, bottom: 65 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -1214,6 +1214,7 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                     tickFormatter={(value) => value}
                     domain={[0, 'dataMax + 1']}
                     dx={-5}
+                    width={40}
                   />
                   <Tooltip
                     content={({ active, payload, label }) => {
@@ -1274,29 +1275,30 @@ const StatusCards = ({ remarkStats = {}, tableData = [], onFilterClick, activeFi
                       <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="count"
                     stroke="#3B82F6"
                     strokeWidth={3}
+                    fillOpacity={1}
                     fill="url(#lineGradient)"
                     dot={{
                       fill: '#3B82F6',
                       stroke: isDarkMode ? '#1F2937' : '#FFFFFF',
                       strokeWidth: 2,
-                      r: 5
+                      r: 4
                     }}
                     activeDot={{
                       fill: '#60A5FA',
                       stroke: isDarkMode ? '#1F2937' : '#FFFFFF',
                       strokeWidth: 3,
-                      r: 8
+                      r: 6
                     }}
                     isAnimationActive={true}
                     animationDuration={1000}
                     animationEasing="ease-out"
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
