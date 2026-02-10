@@ -19,7 +19,6 @@ import RoleBasedRoute from './components/RoleBasedRoute';
 // Pages
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
-import Dashboard from './pages/Dashboard/Dashboard';
 import Profile from './pages/Profile/Profile';
 import Queries from './pages/Queries/Queries';
 import QueryDetail from './pages/Queries/QueryDetail';
@@ -43,13 +42,13 @@ import RefreshDB from './pages/RefreshDB';
 
 function App() {
   // Note: Individual pages will set their own titles using usePageTitle hook
-  
+
   // Wrap these hooks in try/catch to prevent blank screen if context providers are missing
   let user = null;
   let authLoading = false;
   let themeMode = 'light';
   let userRoles = {};
-  
+
   try {
     const auth = useAuth();
     user = auth.user;
@@ -58,13 +57,13 @@ function App() {
   } catch (error) {
     console.error('Auth context error:', error);
   }
-  
+
   try {
     themeMode = useTheme().theme;
   } catch (error) {
     console.error('Theme context error:', error);
   }
-  
+
   const [appLoading, setAppLoading] = useState(true);
   const muiTheme = getTheme(themeMode);
 
@@ -98,8 +97,8 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-        <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+        <Route path="/login" element={user ? <Navigate to="/monitoring" /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/monitoring" /> : <Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/debug-token" element={<TokenDebug />} />
         <Route path="/debug-test" element={<DebugTest />} />
@@ -108,11 +107,10 @@ function App() {
 
         {/* Protected routes with shared layout */}
         <Route element={<Layout />}>
-          <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
-          
+          <Route path="/" element={<Navigate to={user ? "/monitoring" : "/login"} />} />
+
           {/* Basic authenticated routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/generate" element={<GenerateQueries />} />
             <Route path="/queries/:id" element={<QueryDetail />} />
@@ -123,7 +121,7 @@ function App() {
             <Route path="/table-example" element={<TableExample />} />
             <Route path="/otomasi/get-order" element={<GetOrder />} />
             <Route path="/refreshdb" element={<RefreshDB />} />
-            
+
             {/* Admin-only routes */}
             <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
               <Route path="/manage-users" element={<UserManagement />} />

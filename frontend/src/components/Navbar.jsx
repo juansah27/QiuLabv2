@@ -3,7 +3,6 @@ import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 
 const mainNavItems = [
-  { text: 'Dashboard', path: '/dashboard' },
   { text: 'Setup Request', path: '/setup-request' },
   { text: 'Get Order', path: '/otomasi/get-order' },
   { text: 'RefreshDB', path: '/refreshdb' },

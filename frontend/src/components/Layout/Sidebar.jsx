@@ -7,16 +7,16 @@ import logoSrc from '../../assets/images/qiulab-logo.svg';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
-import { 
-  LayoutDashboard, 
-  FileSpreadsheet, 
-  Settings, 
-  User, 
-  LogOut, 
-  Moon, 
-  Sun, 
-  Users, 
-  Activity, 
+import {
+  LayoutDashboard,
+  FileSpreadsheet,
+  Settings,
+  User,
+  LogOut,
+  Moon,
+  Sun,
+  Users,
+  Activity,
   Menu,
   ShoppingCart,
   ClipboardList,
@@ -63,9 +63,6 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
   const renderNavItems = () => {
     return (
       <>
-        {/* Dashboard */}
-        <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" isOpen={isOpen} />
-        
         {/* Team System */}
         <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
           {isOpen && (
@@ -78,7 +75,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
         <NavItem to="/setup-request" icon={Settings} label="Setup Request" isOpen={isOpen} />
         <NavItem to="/statistics" icon={BarChart3} label="Statistik" isOpen={isOpen} />
         <NavItem to="/generate" icon={FileSpreadsheet} label="Generate" isOpen={isOpen} />
-        
+
         {/* Team Sweeping */}
         <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
           {isOpen && (
@@ -90,7 +87,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
         <NavItem to="/otomasi/get-order" icon={ShoppingCart} label="Get Order" isOpen={isOpen} />
         <NavItem to="/monitoring" icon={Eye} label="Cek Order" isOpen={isOpen} />
         <NavItem to="/refreshdb" icon={Database} label="RefreshDB" isOpen={isOpen} />
-        
+
         {/* Special access for admin users */}
         {(user?.role === 'admin' || user?.is_admin) && (
           <>
@@ -112,7 +109,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
     <>
       {/* Backdrop for mobile */}
       {isMobile && isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-20 transition-opacity duration-300"
           onClick={toggleSidebar}
           aria-hidden="true"
@@ -120,7 +117,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
       )}
 
       {/* Sidebar */}
-      <aside 
+      <aside
         className={cn(
           "fixed inset-y-0 left-0 z-30",
           "bg-white dark:bg-gray-800 shadow-md",
@@ -135,7 +132,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
         <ScrollArea className="flex-1 px-2 py-2">
           <nav className="space-y-1">
             {renderNavItems()}
-            
+
             <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
               <NavItem to="/profile" icon={User} label="Profile" isOpen={isOpen} />
             </div>
@@ -164,7 +161,7 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
               <span className="ml-2.5">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
             )}
           </Button>
-          
+
           {/* Logout */}
           <Button
             variant="ghost"
@@ -200,7 +197,7 @@ const NavItem = memo(({ to, icon: Icon, label, isOpen }) => {
         "flex items-center px-2 py-2 text-sm font-medium rounded-md",
         "transition-all duration-200 ease-in-out",
         "hover:scale-105 relative group",
-        isActive 
+        isActive
           ? "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 scale-105"
           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
         THEME_TRANSITIONS.default
