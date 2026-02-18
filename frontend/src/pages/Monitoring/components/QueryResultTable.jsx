@@ -453,23 +453,23 @@ const QueryResultTable = ({
     'Brand',
     'Order Number',
     'Remark',
-    'Batch',
     'OrderDate',
     'OrderStatus',
-    'Status SC',
     'No. Resi',
-    'Transporter',
-    'WH Loc',
-    'Diproses Flexo',
+    'Validasi SKU',
+    'SKU',
     'Tanggal Pembayaran',
     'SLA',
     'Data Masuk CMS',
     'Data Masuk XML',
+    'Batch',
+    'Status SC',
+    'Transporter',
+    'WH Loc',
+    'Diproses Flexo',
     'Interface Date',
     'Status Interfaced',
-    'Validasi SKU',
-    'Status Durasi',
-    'SKU'
+    'Status Durasi'
   ], []);
 
   // Mendapatkan kolom dari data dengan urutan yang ditentukan
@@ -632,7 +632,16 @@ const QueryResultTable = ({
           // Untuk kolom lain, gunakan implementasi asli
           const uniqueValues = Array.from(new Set(
             sourceData
-              .map(row => row[column.id])
+              .map(row => {
+                const val = row[column.id];
+                // Check if it's a date column
+                const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
+                const columnIdName = column.id.toLowerCase().replace(/[^a-z]/g, '');
+                if (dateColumnNames.includes(columnIdName) && val) {
+                  return formatDateString(val);
+                }
+                return val;
+              })
               .filter(value => value !== null && value !== undefined)
           )).sort();
 
@@ -715,6 +724,14 @@ const QueryResultTable = ({
         // Handle array atau single value
         const filters = Array.isArray(filterValues) ? filterValues : [filterValues];
 
+        // Check if it's a date column
+        const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
+        const columnIdName = columnId.toLowerCase().replace(/[^a-z]/g, '');
+        if (dateColumnNames.includes(columnIdName) && value) {
+          const formattedValue = formatDateString(value);
+          return filters.some(filter => String(formattedValue) === String(filter));
+        }
+
         // Jika salah satu filter cocok, lulus
         return filters.some(filter => String(value) === String(filter));
       });
@@ -730,9 +747,29 @@ const QueryResultTable = ({
       if (a[sortConfig.key] === null || a[sortConfig.key] === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
       if (b[sortConfig.key] === null || b[sortConfig.key] === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
 
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Check for date columns
+      const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
+      const columnId = sortConfig.key.toLowerCase().replace(/[^a-z]/g, '');
+      const isDateColumn = dateColumnNames.includes(columnId);
+
+      if (isDateColumn) {
+        const dateA = new Date(aValue);
+        const dateB = new Date(bValue);
+        if (!isNaN(dateA) && !isNaN(dateB)) {
+          return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+      }
+
       // Memastikan kita membandingkan string dengan string
-      const aValue = typeof a[sortConfig.key] === 'string' ? a[sortConfig.key].toLowerCase() : a[sortConfig.key];
-      const bValue = typeof b[sortConfig.key] === 'string' ? b[sortConfig.key].toLowerCase() : b[sortConfig.key];
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+      }
+      if (typeof bValue === 'string') {
+        bValue = bValue.toLowerCase();
+      }
 
       if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -1801,12 +1838,12 @@ const QueryResultTable = ({
       return (
         <div
           className={`group cursor-pointer px-2 py-1 ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'} rounded ${isEdited ? `font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}` : ''
-            } ${THEME_TRANSITIONS.default} hover:bg-blue-100 dark:hover:bg-blue-800/30`}
+            } ${THEME_TRANSITIONS.default} hover:bg-blue-100 dark:hover:bg-blue-800/30 w-full truncate`}
           onClick={() => handleCellEdit(rowIndex, column.id, displayValue)}
-          title="Klik untuk mengedit (atau tekan Enter/F2)"
+          title={`Klik untuk mengedit (atau tekan Enter/F2)\n${displayValue !== null && displayValue !== undefined ? String(displayValue) : ''}`}
         >
           <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 truncate">
               {displayValue === null || displayValue === undefined ?
                 <span className={`${isDarkMode ? 'text-gray-500' : 'text-gray-400'} italic text-xs ${THEME_TRANSITIONS.default}`}>
                   Klik untuk menambahkan
@@ -1814,7 +1851,7 @@ const QueryResultTable = ({
                 <span className="truncate">{String(displayValue)}</span>
               }
             </div>
-            <div className="flex items-center ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
               {isEdited && <span className="text-xs mr-1">✏️</span>}
               <span className="text-xs text-gray-500">⌨️</span>
             </div>
@@ -1824,11 +1861,16 @@ const QueryResultTable = ({
     }
 
     if (value === null || value === undefined) {
-      return <span className={`${isDarkMode ? 'text-gray-500' : 'text-gray-400'} italic text-xs ${THEME_TRANSITIONS.default}`}>NULL</span>;
+      return (
+        <div className="truncate w-full" title="NULL">
+          <span className={`${isDarkMode ? 'text-gray-500' : 'text-gray-400'} italic text-xs ${THEME_TRANSITIONS.default}`}>NULL</span>
+        </div>
+      );
     }
 
     if (typeof value === 'boolean') {
-      return value ? 'Ya' : 'Tidak';
+      const text = value ? 'Ya' : 'Tidak';
+      return <div className="truncate w-full" title={text}>{text}</div>;
     }
 
     // Check if it's a date column based on its name or type
@@ -1836,24 +1878,37 @@ const QueryResultTable = ({
     if (dateColumnNames.includes(column.label.toLowerCase().replace(/[^a-z]/g, '')) ||
       dateColumnNames.includes(column.id.toLowerCase().replace(/[^a-z]/g, '')) ||
       value instanceof Date) {
-      return formatDateString(value);
+      const formattedDate = formatDateString(value);
+      return <div className="truncate w-full" title={formattedDate}>{formattedDate}</div>;
     }
 
     // Khusus untuk SystemRefId, hilangkan spasi dan baris baru
     if (column.id === 'SystemRefId') {
-      return String(value).replace(/\s+/g, '');
+      const text = String(value).replace(/\s+/g, '');
+      return <div className="truncate w-full" title={text}>{text}</div>;
     }
 
     // Pewarnaan kondisional berdasarkan jenis kolom dan nilai
     if (column.id === 'Status_Interfaced' || column.id === 'Status Interfaced') {
-      if (String(value).toLowerCase() === 'yes' || String(value).toLowerCase() === 'ya') {
-        return <span className="text-green-600 dark:text-green-400 font-medium">{value}</span>;
-      } else if (String(value).toLowerCase() === 'no' || String(value).toLowerCase() === 'tidak') {
-        return <span className="text-red-600 dark:text-red-400 font-medium">{value}</span>;
+      const strValue = String(value);
+      if (strValue.toLowerCase() === 'yes' || strValue.toLowerCase() === 'ya') {
+        return (
+          <div className="truncate w-full" title={strValue}>
+            <span className="text-green-600 dark:text-green-400 font-medium">{value}</span>
+          </div>
+        );
+      } else if (strValue.toLowerCase() === 'no' || strValue.toLowerCase() === 'tidak') {
+        return (
+          <div className="truncate w-full" title={strValue}>
+            <span className="text-red-600 dark:text-red-400 font-medium">{value}</span>
+          </div>
+        );
       }
+      return <div className="truncate w-full" title={strValue}>{strValue}</div>;
     }
 
-    return String(value);
+    const strValue = String(value);
+    return <div className="truncate w-full" title={strValue}>{strValue}</div>;
   };
 
   // Fokus ke sel aktif saat berubah
@@ -2198,7 +2253,7 @@ const QueryResultTable = ({
                       scope="col"
                       className={`${isCompactView ? 'px-2 py-1' : 'px-3 py-2'} text-xs font-medium text-left ${isDarkMode ? 'text-gray-300' : 'text-gray-500'
                         } select-none cursor-pointer ${selectedColumns.includes(column.id) ? (isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100') : ''
-                        } ${THEME_TRANSITIONS.default}`}
+                        } ${THEME_TRANSITIONS.default} w-[180px] min-w-[180px] max-w-[180px] truncate`}
                       onClick={(e) => handleColumnSelect(column.id, e)}
                       title="Klik untuk memilih kolom. Gunakan Ctrl+klik untuk multi-pilih atau Shift+klik untuk memilih rentang kolom."
                     >
@@ -2295,7 +2350,7 @@ const QueryResultTable = ({
                           } ${activeCell && activeCell.rowIndex === rowIndex && activeCell.colIndex === colIndex
                             ? 'outline outline-2 outline-blue-500 dark:outline-blue-400 relative z-10'
                             : ''
-                          } ${THEME_TRANSITIONS.default} focus:outline-blue-500 focus:outline-2 focus:z-10`}
+                          } ${THEME_TRANSITIONS.default} focus:outline-blue-500 focus:outline-2 focus:z-10 w-[180px] min-w-[180px] max-w-[180px] overflow-hidden`}
                       >
                         {renderCellValue(
                           column.id === 'Remark' ? getRemarkValue(row, column.id) : row[column.id],
