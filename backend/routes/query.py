@@ -3052,3 +3052,95 @@ def get_duplicate_orders_data():
             'error': 'Failed to fetch duplicate orders data',
             'details': str(e)
         }), 500
+
+@query_bp.route('/tts-label', methods=['GET'])
+@jwt_required()
+def get_tts_label_data():
+    """Get TTS LABEL data"""
+    try:
+        # Load environment variables
+        load_dotenv()
+        
+        # Get connection details from environment
+        server = os.getenv('DB_SERVER')
+        database = os.getenv('DB_NAME')
+        username = os.getenv('DB_USERNAME')
+        password = os.getenv('DB_PASSWORD')
+        
+        use_sqlite_for_testing = os.getenv('USE_SQLITE_FOR_TESTING', 'False').lower() == 'true'
+        
+        if use_sqlite_for_testing:
+            # Mock data for testing
+            mock_data = [
+                {'Client': 'FACETOLOGY', 'ORDNUM': 'TTS001', 'Order Status': 'READY_TO_SHIP', 'Payment Date': '2024-01-16 10:00:00'},
+                {'Client': 'SOMEBYMI', 'ORDNUM': 'TTS002', 'Order Status': 'READY_TO_SHIP', 'Payment Date': '2024-01-16 11:00:00'},
+                {'Client': 'ESQA', 'ORDNUM': 'TTS003', 'Order Status': 'READY_TO_SHIP', 'Payment Date': '2024-01-16 12:00:00'}
+            ]
+            
+            return jsonify({
+                'status': 'success',
+                'data': mock_data,
+                'data_source': 'mock_data'
+            }), 200
+        
+        else:
+            # Create connection to SQL Server
+            try:
+                connection_string = create_sql_server_connection_string(
+                    server, database, username, password, timeout=30
+                )
+                conn = pyodbc.connect(connection_string)
+            except Exception as driver_error:
+                print(f"ODBC Driver error in tts-label: {str(driver_error)}")
+                return jsonify({
+                    'status': 'error',
+                    'error': 'Database connection failed',
+                    'message': str(driver_error),
+                    'details': 'ODBC Driver untuk SQL Server tidak ditemukan. Silakan install ODBC Driver 17 for SQL Server.'
+                }), 500
+            
+            cursor = conn.cursor()
+            
+            # Execute the TTS LABEL query
+            query = """
+            SELECT  
+                so.merchantname AS [Client],
+                so.SystemRefId AS [ORDNUM],
+                so.OrderStatus AS [Order Status],
+                so.PaymentDate AS [Payment Date],
+                so.OrderStatus AS [Order Status]
+            FROM flexo_db.dbo.SalesOrder so WITH (NOLOCK)
+            WHERE so.SystemId = 'MPTS'
+              AND NOT EXISTS (
+                  SELECT 1 
+                  FROM Flexo_Db.dbo.TTS_Label ois WITH (NOLOCK)
+                  WHERE ois.EntityID = so.EntityId
+              )
+              AND so.OrderStatus NOT IN ('COMPLETED','CANCELLED','CANCEL','DELIVERED','IN_TRANSIT','SHIPPED','UNPAID','ON_HOLD')
+              AND so.MerchantName NOT IN ('ELVICTO', 'ISWHITE','SOMBONG')
+              ORDER BY so.MerchantName ASC;
+            """
+            
+            cursor.execute(query)
+            columns = [column[0] for column in cursor.description]
+            results = []
+            
+            for row in cursor.fetchall():
+                results.append(dict(zip(columns, row)))
+            
+            cursor.close()
+            conn.close()
+            
+            return jsonify({
+                'status': 'success',
+                'data': results,
+                'data_source': 'sql_server'
+            }), 200
+            
+    except Exception as e:
+        print(f"Error in tts-label endpoint: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': 'Failed to fetch TTS LABEL data',
+            'details': str(e)
+        }), 500

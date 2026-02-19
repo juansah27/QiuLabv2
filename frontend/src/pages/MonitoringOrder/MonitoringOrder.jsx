@@ -321,6 +321,11 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
               { label: 'Total Quantity SOL', value: dataArray.reduce((sum, item) => sum + (item['Quantity SOL'] || 0), 0), color: 'orange' },
               { label: 'Total Quantity XML', value: dataArray.reduce((sum, item) => sum + (item['Quantity XML'] || 0), 0), color: 'pink' }
             ];
+          case 'ttsLabel':
+            return [
+              { label: 'Total Records', value: dataArray.length, color: 'blue' },
+              { label: 'Unique Clients', value: new Set(sample.map(item => item.Client)).size, color: 'green' }
+            ];
           default:
             return [{ label: 'Total Records', value: dataArray.length, color: 'blue' }];
         }
@@ -362,6 +367,11 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
               { label: 'Total Quantity SOL', value: dataArray.reduce((sum, item) => sum + (item['Quantity SOL'] || 0), 0), color: 'orange' },
               { label: 'Total Quantity XML', value: dataArray.reduce((sum, item) => sum + (item['Quantity XML'] || 0), 0), color: 'pink' }
             ];
+          case 'ttsLabel':
+            return [
+              { label: 'Total Records', value: dataArray.length, color: 'blue' },
+              { label: 'Unique Clients', value: new Set(dataArray.map(item => item.Client)).size, color: 'green' }
+            ];
           default:
             return [{ label: 'Total Records', value: dataArray.length, color: 'blue' }];
         }
@@ -400,11 +410,11 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
       };
     }
 
-    // Check if it's duplicate order data
-    if (firstItem.ORDNUM && firstItem.ORDLIN && firstItem.PRTNUM && firstItem.ORDSLN !== undefined) {
+    // Check if it's TTS LABEL data
+    if (firstItem.Client && firstItem.ORDNUM && firstItem['Order Status'] && firstItem['Payment Date']) {
       return {
-        headers: ['ORDNUM', 'PRTNUM', 'ORDLIN', 'ORDSLN'],
-        summaryStats: calculateStats(data, 'duplicate')
+        headers: ['Client', 'ORDNUM', 'Order Status', 'Payment Date'],
+        summaryStats: calculateStats(data, 'ttsLabel')
       };
     }
 
@@ -864,12 +874,14 @@ const MonitoringOrder = () => {
   const [lateSku2Data, setLateSku2Data] = useState(null);
   const [invalidSkuData, setInvalidSkuData] = useState(null);
   const [duplicateOrderData, setDuplicateOrderData] = useState(null);
+  const [ttsLabelData, setTtsLabelData] = useState(null);
   const [loadingAdditionalData, setLoadingAdditionalData] = useState(false);
   const [additionalDataSources, setAdditionalDataSources] = useState({
     lateSku: 'sql',
     lateSku2: 'sql',
     invalidSku: 'sql',
-    duplicateOrders: 'sql'
+    duplicateOrders: 'sql',
+    ttsLabel: 'sql'
   });
 
 
@@ -1311,6 +1323,7 @@ const MonitoringOrder = () => {
       setLateSku2Data(null);
       setInvalidSkuData(null);
       setDuplicateOrderData(null);
+      setTtsLabelData(null);
 
       const token = localStorage.getItem('token');
 
@@ -1332,11 +1345,14 @@ const MonitoringOrder = () => {
         }),
         fetch('/api/query/duplicate-orders', {
           headers: { 'Authorization': `Bearer ${token}`, 'Accept-Encoding': 'gzip, deflate, br' }
+        }),
+        fetch('/api/query/tts-label', {
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept-Encoding': 'gzip, deflate, br' }
         })
       ]);
 
       const results = await Promise.race([fetchPromise, timeoutPromise]);
-      const [lateSkuResponse, lateSku2Response, invalidSkuResponse, duplicateOrderResponse] = results;
+      const [lateSkuResponse, lateSku2Response, invalidSkuResponse, duplicateOrderResponse, ttsLabelResponse] = results;
 
       // Process Late SKU response
       if (lateSkuResponse.status === 'fulfilled' && lateSkuResponse.value.ok) {
@@ -1412,6 +1428,25 @@ const MonitoringOrder = () => {
       } else {
         console.warn('Duplicate Orders API failed:', duplicateOrderResponse.status);
         setDuplicateOrderData(null);
+      }
+
+      // Process TTS LABEL response
+      if (ttsLabelResponse.status === 'fulfilled' && ttsLabelResponse.value.ok) {
+        try {
+          const ttsLabelResult = await ttsLabelResponse.value.json();
+          if (ttsLabelResult.status === 'success') {
+            setTtsLabelData(ttsLabelResult.data || []);
+            setAdditionalDataSources(prev => ({ ...prev, ttsLabel: ttsLabelResult.data_source || 'sql' }));
+          } else {
+            setTtsLabelData(null);
+          }
+        } catch (err) {
+          console.warn('Error parsing TTS LABEL data:', err);
+          setTtsLabelData(null);
+        }
+      } else {
+        console.warn('TTS LABEL API failed:', ttsLabelResponse.status);
+        setTtsLabelData(null);
       }
 
     } catch (err) {
@@ -2071,13 +2106,14 @@ const MonitoringOrder = () => {
         </div>
 
         {/* Additional Data Grids */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
           {loadingAdditionalData ? (
             <>
               <StatCardSkeleton color="red" delay={0} />
               <StatCardSkeleton color="pink" delay={1} />
               <StatCardSkeleton color="orange" delay={2} />
               <StatCardSkeleton color="purple" delay={3} />
+              <StatCardSkeleton color="blue" delay={4} />
             </>
           ) : (
             <>
@@ -2155,6 +2191,26 @@ const MonitoringOrder = () => {
                       title: 'Order Duplikat Details',
                       data: duplicateOrderData,
                       fullData: duplicateOrderData,
+                      loading: false
+                    });
+                  }
+                }}
+              />
+
+              {/* TTS LABEL */}
+              <StatCard
+                title="TTS LABEL"
+                value={ttsLabelData ? ttsLabelData.length : 'N/A'}
+                icon={ClipboardDocumentIcon}
+                color="blue"
+                loading={loadingAdditionalData}
+                onClick={() => {
+                  if (ttsLabelData) {
+                    setModalState({
+                      isOpen: true,
+                      title: 'TTS LABEL Details',
+                      data: ttsLabelData,
+                      fullData: ttsLabelData,
                       loading: false
                     });
                   }
