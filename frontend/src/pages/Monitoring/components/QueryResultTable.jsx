@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { getRemarkValue } from '../hooks/useMonitoring';
 import BulkRemarkUpdate from './BulkRemarkUpdate';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -42,29 +42,32 @@ const useDebounce = (value, delay) => {
 };
 
 // Komponen Advanced Filter Dropdown
-const AdvancedFilterDropdown = React.memo(({ isOpen, onClose, options = [], selectedValues = [], onApply, title }) => {
+const AdvancedFilterDropdown = React.memo(({ isOpen, onClose, options = [], selectedValues = [], onApply, title, preferRight = false }) => {
   const [tempSelected, setTempSelected] = useState(selectedValues || []);
   const [searchTerm, setSearchTerm] = useState('');
+  const [alignRight, setAlignRight] = useState(preferRight);
   const dropdownRef = useRef(null);
   const { isDarkMode } = useTheme();
-  const [alignRight, setAlignRight] = useState(false);
-
-  // Deteksi posisi dropdown untuk mencegah overflow ke kanan
-  useEffect(() => {
-    if (isOpen && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      if (rect.right > window.innerWidth) {
-        setAlignRight(true);
-      } else {
-        setAlignRight(false);
-      }
-    }
-  }, [isOpen]);
 
   // Reset tempSelected when selectedValues changes from outside
   useEffect(() => {
     setTempSelected(selectedValues || []);
   }, [selectedValues]);
+
+  // Deteksi posisi dropdown untuk mencegah overflow ke kanan
+  useLayoutEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+
+      // Jika overflow ke kanan atau memang preferRight, gunakan alignRight
+      if (rect.right > windowWidth - 10 || preferRight) {
+        setAlignRight(true);
+      } else {
+        setAlignRight(false);
+      }
+    }
+  }, [isOpen, preferRight]);
 
   const filteredOptions = useMemo(() => {
     if (!searchTerm.trim()) return options;
@@ -2330,6 +2333,7 @@ const QueryResultTable = ({
                                   selectedValues={columnFilters[column.id] || []}
                                   onApply={(values) => handleColumnFilterChange(column.id, values)}
                                   title={`Filter: ${column.label}`}
+                                  preferRight={colIndex > columns.length - 3}
                                 />
                               )}
                             </div>
