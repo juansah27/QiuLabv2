@@ -47,6 +47,19 @@ const AdvancedFilterDropdown = React.memo(({ isOpen, onClose, options = [], sele
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
   const { isDarkMode } = useTheme();
+  const [alignRight, setAlignRight] = useState(false);
+
+  // Deteksi posisi dropdown untuk mencegah overflow ke kanan
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      if (rect.right > window.innerWidth) {
+        setAlignRight(true);
+      } else {
+        setAlignRight(false);
+      }
+    }
+  }, [isOpen]);
 
   // Reset tempSelected when selectedValues changes from outside
   useEffect(() => {
@@ -150,7 +163,7 @@ const AdvancedFilterDropdown = React.memo(({ isOpen, onClose, options = [], sele
   return (
     <div
       ref={dropdownRef}
-      className={`absolute z-50 mt-1 ${THEME_COLORS.card.light} ${THEME_COLORS.card.dark} shadow-lg rounded-md ${THEME_COLORS.border.light} ${THEME_COLORS.border.dark} w-64 ${THEME_TRANSITIONS.default}`}
+      className={`absolute z-50 mt-1 ${alignRight ? 'right-0' : 'left-0'} ${THEME_COLORS.card.light} ${THEME_COLORS.card.dark} shadow-lg rounded-md ${THEME_COLORS.border.light} ${THEME_COLORS.border.dark} w-64 ${THEME_TRANSITIONS.default}`}
       style={{ maxHeight: '350px', overflowY: 'auto' }}
     >
       <div className={`p-2 border-b ${THEME_COLORS.border.light} ${THEME_COLORS.border.dark} ${THEME_TRANSITIONS.default}`}>
