@@ -150,7 +150,7 @@ const AdvancedFilterDropdown = React.memo(({ isOpen, onClose, options = [], sele
   return (
     <div
       ref={dropdownRef}
-      className={`absolute z-10 mt-1 ${THEME_COLORS.card.light} ${THEME_COLORS.card.dark} shadow-lg rounded-md ${THEME_COLORS.border.light} ${THEME_COLORS.border.dark} w-64 ${THEME_TRANSITIONS.default}`}
+      className={`absolute z-50 mt-1 ${THEME_COLORS.card.light} ${THEME_COLORS.card.dark} shadow-lg rounded-md ${THEME_COLORS.border.light} ${THEME_COLORS.border.dark} w-64 ${THEME_TRANSITIONS.default}`}
       style={{ maxHeight: '350px', overflowY: 'auto' }}
     >
       <div className={`p-2 border-b ${THEME_COLORS.border.light} ${THEME_COLORS.border.dark} ${THEME_TRANSITIONS.default}`}>
@@ -2253,7 +2253,7 @@ const QueryResultTable = ({
                       scope="col"
                       className={`${isCompactView ? 'px-2 py-1' : 'px-3 py-2'} text-xs font-medium text-left ${isDarkMode ? 'text-gray-300' : 'text-gray-500'
                         } select-none cursor-pointer ${selectedColumns.includes(column.id) ? (isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100') : ''
-                        } ${THEME_TRANSITIONS.default} w-[180px] min-w-[180px] max-w-[180px] truncate`}
+                        } ${THEME_TRANSITIONS.default} w-[180px] min-w-[180px] max-w-[180px]`}
                       onClick={(e) => handleColumnSelect(column.id, e)}
                       title="Klik untuk memilih kolom. Gunakan Ctrl+klik untuk multi-pilih atau Shift+klik untuk memilih rentang kolom."
                     >
@@ -2350,7 +2350,7 @@ const QueryResultTable = ({
                           } ${activeCell && activeCell.rowIndex === rowIndex && activeCell.colIndex === colIndex
                             ? 'outline outline-2 outline-blue-500 dark:outline-blue-400 relative z-10'
                             : ''
-                          } ${THEME_TRANSITIONS.default} focus:outline-blue-500 focus:outline-2 focus:z-10 w-[180px] min-w-[180px] max-w-[180px] overflow-hidden`}
+                          } ${THEME_TRANSITIONS.default} focus:outline-blue-500 focus:outline-2 focus:z-10 w-[180px] min-w-[180px] max-w-[180px]`}
                       >
                         {renderCellValue(
                           column.id === 'Remark' ? getRemarkValue(row, column.id) : row[column.id],
