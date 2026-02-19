@@ -6,6 +6,24 @@ import { THEME_COLORS, THEME_TRANSITIONS, COMPONENT_CLASSES } from '../../../uti
 import RemarkInput from './RemarkInput';
 import api from '../../../utils/api';
 
+// Dasar kolom tanggal yang digunakan di berbagai tempat
+const DATE_COLUMN_NAMES = [
+  'orderdate', 'sla', 'datamasukcms', 'datamasukxml',
+  'interfacedate', 'transferdate', 'entdte', 'moddte',
+  'mandte', 'tanggalpembayaran', 'created_at', 'updated_at',
+  'tanggal_transaksi'
+];
+
+// Helper untuk format tanggal
+const formatDateString = (value) => {
+  if (!value) return value;
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return value;
+
+  const pad = (num) => String(num).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+};
+
 // Tambahkan debounce utility
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -635,9 +653,8 @@ const QueryResultTable = ({
               .map(row => {
                 const val = row[column.id];
                 // Check if it's a date column
-                const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
                 const columnIdName = column.id.toLowerCase().replace(/[^a-z]/g, '');
-                if (dateColumnNames.includes(columnIdName) && val) {
+                if (DATE_COLUMN_NAMES.includes(columnIdName) && val) {
                   return formatDateString(val);
                 }
                 return val;
@@ -724,10 +741,8 @@ const QueryResultTable = ({
         // Handle array atau single value
         const filters = Array.isArray(filterValues) ? filterValues : [filterValues];
 
-        // Check if it's a date column
-        const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
         const columnIdName = columnId.toLowerCase().replace(/[^a-z]/g, '');
-        if (dateColumnNames.includes(columnIdName) && value) {
+        if (DATE_COLUMN_NAMES.includes(columnIdName) && value) {
           const formattedValue = formatDateString(value);
           return filters.some(filter => String(formattedValue) === String(filter));
         }
@@ -750,10 +765,8 @@ const QueryResultTable = ({
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
 
-      // Check for date columns
-      const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
       const columnId = sortConfig.key.toLowerCase().replace(/[^a-z]/g, '');
-      const isDateColumn = dateColumnNames.includes(columnId);
+      const isDateColumn = DATE_COLUMN_NAMES.includes(columnId);
 
       if (isDateColumn) {
         const dateA = new Date(aValue);
@@ -1059,9 +1072,7 @@ const QueryResultTable = ({
               value = getRemarkValue(row, header);
             }
 
-            // Cek apakah kolom adalah kolom tanggal dan format jika ya
-            const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'created_at', 'updated_at', 'tanggal_transaksi', 'tanggalpembayaran'];
-            if (dateColumnNames.includes(header.toLowerCase().replace(/[^a-z]/g, ''))) {
+            if (DATE_COLUMN_NAMES.includes(header.toLowerCase().replace(/[^a-z]/g, ''))) {
               value = formatDateString(value);
             }
 
@@ -1799,15 +1810,6 @@ const QueryResultTable = ({
     }
   };
 
-  // Helper untuk format tanggal
-  const formatDateString = (value) => {
-    if (!value) return value;
-    const date = new Date(value);
-    if (isNaN(date.getTime())) return value;
-
-    const pad = (num) => String(num).padStart(2, '0');
-    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
-  };
 
   // Modifikasi renderCellValue untuk menggunakan RemarkInput yang dioptimasi
   const renderCellValue = (value, row, column, rowIndex) => {
@@ -1873,10 +1875,8 @@ const QueryResultTable = ({
       return <div className="truncate w-full" title={text}>{text}</div>;
     }
 
-    // Check if it's a date column based on its name or type
-    const dateColumnNames = ['orderdate', 'sla', 'datamasukcms', 'datamasukxml', 'interfacedate', 'transferdate', 'entdte', 'moddte', 'mandte', 'tanggalpembayaran'];
-    if (dateColumnNames.includes(column.label.toLowerCase().replace(/[^a-z]/g, '')) ||
-      dateColumnNames.includes(column.id.toLowerCase().replace(/[^a-z]/g, '')) ||
+    if (DATE_COLUMN_NAMES.includes(column.label.toLowerCase().replace(/[^a-z]/g, '')) ||
+      DATE_COLUMN_NAMES.includes(column.id.toLowerCase().replace(/[^a-z]/g, '')) ||
       value instanceof Date) {
       const formattedDate = formatDateString(value);
       return <div className="truncate w-full" title={formattedDate}>{formattedDate}</div>;
