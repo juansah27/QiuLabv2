@@ -273,7 +273,8 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
   if (!isOpen) return null;
 
   // Determine data type and get appropriate headers and summary stats
-  const getDataConfig = () => {
+  // Determine data type and get appropriate headers and summary stats
+  const dataConfig = useMemo(() => {
     if (!data || data.length === 0) return { headers: [], summaryStats: [] };
 
     const firstItem = data[0];
@@ -412,9 +413,25 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
 
     // Check if it's TTS LABEL data
     if (firstItem.Client && firstItem.ORDNUM && firstItem['Order Status'] && firstItem['Payment Date']) {
+      // Logic to calculate Top 5 Clients
+      const getTopFiveClients = (items) => {
+        const counts = {};
+        // Cap at 50k for performance
+        const limit = Math.min(items.length, 50000);
+        for (let i = 0; i < limit; i++) {
+          const client = items[i].Client || 'Unknown';
+          counts[client] = (counts[client] || 0) + 1;
+        }
+        return Object.entries(counts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([label, value]) => ({ label, value }));
+      };
+
       return {
         headers: ['Client', 'ORDNUM', 'Order Status', 'Payment Date'],
-        summaryStats: calculateStats(data, 'ttsLabel')
+        summaryStats: calculateStats(data, 'ttsLabel'),
+        topFiveStats: getTopFiveClients(data)
       };
     }
 
@@ -424,10 +441,9 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
       headers,
       summaryStats: calculateStats(data, 'default')
     };
-  };
+  }, [data]);
 
-  const dataConfig = getDataConfig();
-  const { headers, summaryStats } = dataConfig;
+  const { headers, summaryStats, topFiveStats } = dataConfig;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -626,6 +642,21 @@ const DetailModal = ({ isOpen, onClose, title, data, fullData = null, loading = 
                   </div>
                 ))}
               </div>
+
+              {/* Top 5 Clients (TTS Label only) */}
+              {topFiveStats && topFiveStats.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wider">Top 5 Clients</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    {topFiveStats.map((stat, index) => (
+                      <div key={index} className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg flex flex-col justify-between border border-purple-100 dark:border-purple-800/30">
+                        <div className="text-xs text-purple-600 dark:text-purple-400 font-medium truncate mb-1" title={stat.label}>{stat.label}</div>
+                        <div className="text-xl font-bold text-purple-700 dark:text-purple-300">{stat.value.toLocaleString()}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Data Table */}
               <div className="overflow-x-auto">
